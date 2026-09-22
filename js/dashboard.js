@@ -1,3 +1,4 @@
+import { EVENT } from "./data.js";
 import {
   getActivationSummary,
   getAreaSummaries,
@@ -27,6 +28,10 @@ export function renderDashboard(state) {
           <h2 id="dashboard-title">Centro de control operativo</h2>
         </div>
         ${badge("OPERATIVO", "online")}
+      </div>
+
+      <div class="event-identity" aria-label="Identidad visual EXPO 12H">
+        <img src="${escapeHtml(EVENT.logoAlt)}" alt="EXPO 12H Ecuador">
       </div>
 
       <div class="metrics-grid">

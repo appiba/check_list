@@ -21,6 +21,16 @@ export function createDefaultState() {
       createdAt: nowIso(),
       updatedAt: nowIso()
     },
+    sync: {
+      enabled: false,
+      webAppUrl: "",
+      spreadsheetId: "1xNuN2tUVGF55T_fiHjZknBhg6pkYxj8Gc-TaJ-jPzps",
+      status: "local",
+      message: "Sin conexión activa",
+      lastPullAt: "",
+      lastPushAt: "",
+      lastError: ""
+    },
     ui: {
       view: "dashboard",
       checklistStatus: "todas",
@@ -166,16 +176,18 @@ function mergeDefaults(defaultState, savedState) {
   return merged;
 }
 
-export function loadState() {
-  const defaults = createDefaultState();
+export function normalizeState(savedState) {
+  return mergeDefaults(createDefaultState(), savedState);
+}
 
+export function loadState() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return defaults;
-    return mergeDefaults(defaults, JSON.parse(raw));
+    if (!raw) return createDefaultState();
+    return normalizeState(JSON.parse(raw));
   } catch (error) {
     console.warn("No se pudo cargar el estado local.", error);
-    return defaults;
+    return createDefaultState();
   }
 }
 

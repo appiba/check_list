@@ -20,9 +20,37 @@ export function renderConfig(state) {
         <p class="muted">Última actualización local: ${formatDateTime(state.meta.updatedAt)}</p>
       </article>
 
-      <article class="panel config-panel">
-        <span class="section-kicker">Sincronización futura</span>
-        <p>La estructura separa datos semilla, estado operativo, filtros y renderizado. La conexión posterior con Google Sheets + Google Apps Script puede leer y escribir sobre el mismo modelo de estado.</p>
+      <article class="panel config-panel sync-panel">
+        <div class="panel-header">
+          <span class="section-kicker">Google Sheets + Apps Script</span>
+          <span class="badge badge-${escapeHtml(state.sync.status)}">${escapeHtml(state.sync.status)}</span>
+        </div>
+        <h3>Sincronización operativa</h3>
+        <p>${escapeHtml(state.sync.message || "Sin conexión activa")}</p>
+        ${state.sync.lastError ? `<p class="sync-error">${escapeHtml(state.sync.lastError)}</p>` : ""}
+        <div class="filter-grid">
+          <label>
+            Apps Script Web App URL
+            <input type="url" value="${escapeHtml(state.sync.webAppUrl)}" data-action="update-sync-field" data-field="webAppUrl" placeholder="https://script.google.com/macros/s/.../exec">
+          </label>
+          <label>
+            Spreadsheet ID
+            <input type="text" value="${escapeHtml(state.sync.spreadsheetId)}" data-action="update-sync-field" data-field="spreadsheetId">
+          </label>
+        </div>
+        <label class="sync-toggle">
+          <input type="checkbox" data-action="toggle-sync-enabled" ${state.sync.enabled ? "checked" : ""}>
+          <span>Activar sincronización automática</span>
+        </label>
+        <div class="sync-actions">
+          <button class="primary-action" type="button" data-action="sync-test">Probar conexión</button>
+          <button class="ghost-action" type="button" data-action="sync-push">Subir estado local</button>
+          <button class="ghost-action" type="button" data-action="sync-pull">Bajar estado remoto</button>
+        </div>
+        <div class="sync-meta">
+          <span>Última subida: ${formatDateTime(state.sync.lastPushAt)}</span>
+          <span>Última bajada: ${formatDateTime(state.sync.lastPullAt)}</span>
+        </div>
       </article>
 
       <article class="panel danger-zone">

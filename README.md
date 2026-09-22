@@ -50,6 +50,8 @@ index.html
 manifest.json
 service-worker.js
 assets/
+  expo12h-logo-alt.png
+  expo12h-logo-primary.png
   icon.svg
 css/
   styles.css
@@ -65,15 +67,20 @@ js/
   map.js
   metrics.js
   storage.js
+  sync.js
   team.js
   timeline.js
   utils.js
   vehicles.js
+google-apps-script/
+  Code.gs
+  appsscript.json
 ```
 
 ## Módulos
 
 - Dashboard principal con avance general, tarjetas de control, actividad actual e incidencias abiertas.
+- Identidad visual EXPO 12H aplicada en header y dashboard.
 - Checklist operativo con estados, responsable, hora, prioridad, observación, evidencia y filtros.
 - Cronograma maestro con estados por actividad.
 - Vehículos inscritos con 58 autos, buscador, filtros, parqueadero, puesto y estados rápidos.
@@ -83,6 +90,7 @@ js/
 - Circuito cerrado / transmisión como módulo de producción audiovisual.
 - Mapa operativo preparado para incorporar el render 3D oficial.
 - Configuración con reinicio confirmado de datos locales.
+- Sincronización con Google Sheets mediante Google Apps Script Web App.
 
 ## Cómo modificar datos
 
@@ -113,6 +121,46 @@ Llave usada en LocalStorage:
 expo12h-control-center-v1
 ```
 
+## Google Sheets + Apps Script
+
+La app incluye integración lista para Google Sheets. El backend está en `google-apps-script/Code.gs`.
+
+Hoja configurada:
+
+```text
+1xNuN2tUVGF55T_fiHjZknBhg6pkYxj8Gc-TaJ-jPzps
+```
+
+Activación:
+
+1. Abrir el proyecto en Apps Script.
+2. Pegar el contenido de `google-apps-script/Code.gs` en `Código.gs`.
+3. En configuración del proyecto, activar el manifiesto y usar `google-apps-script/appsscript.json` si se desea copiar la configuración.
+4. Ejecutar `setupExpo12hControlCenter`.
+5. Autorizar permisos de Google cuando Apps Script lo pida.
+6. Desplegar como Web App.
+7. Usar:
+   - Ejecutar como: usuario que despliega.
+   - Acceso: cualquier usuario con el enlace.
+8. Copiar la URL `/exec` del Web App.
+9. En la app, abrir `CONFIGURACIÓN`, pegar la URL, activar sincronización automática y presionar `Probar conexión`.
+10. Presionar `Subir estado local` para poblar las pestañas de Google Sheets.
+
+La escritura desde GitHub Pages usa POST hacia Apps Script y la lectura usa JSONP para evitar problemas de CORS.
+
+Pestañas generadas:
+
+- `DASHBOARD`
+- `CHECKLIST`
+- `TIMELINE`
+- `VEHICLES`
+- `ACTIVATIONS`
+- `TEAM`
+- `STAFF`
+- `INCIDENTS`
+- `BROADCAST`
+- `MAP`
+
 ## Próxima integración
 
-La arquitectura está preparada para reemplazar o complementar LocalStorage con Google Sheets + Google Apps Script en una siguiente fase, manteniendo separados datos, estado, filtros, métricas y renderizado.
+La arquitectura ya sincroniza con Google Sheets vía Apps Script. La siguiente mejora natural es agregar autenticación con token operativo o una interfaz de administración para bloquear cambios externos al Web App.

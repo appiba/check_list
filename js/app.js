@@ -6,7 +6,8 @@ import { renderDashboard } from "./dashboard.js";
 import { EVENT } from "./data.js";
 import { renderIncidents } from "./incidents.js";
 import { renderMap } from "./map.js";
-import { resetState, loadState, saveState, touch } from "./storage.js";
+import { resetState, loadState, normalizeState, saveState, touch } from "./storage.js";
+import { canSync, pullState, pushState, queueRemoteSave, testConnection } from "./sync.js";
 import { renderTeam } from "./team.js";
 import { renderTimeline } from "./timeline.js";
 import { escapeHtml, getFormValue } from "./utils.js";
@@ -51,10 +52,15 @@ function render() {
   app.innerHTML = `
     <header class="app-header">
       <div class="header-inner">
-        <div class="brand-block">
-          <p>${escapeHtml(EVENT.series)}</p>
-          <h1>${escapeHtml(EVENT.name)}<span>CONTROL CENTER</span></h1>
-          <p>${escapeHtml(EVENT.dateLabel)}</p>
+        <div class="brand-lockup">
+          <div class="event-logo" aria-hidden="true">
+            <img src="${escapeHtml(EVENT.logoPrimary)}" alt="">
+          </div>
+          <div class="brand-block">
+            <p>${escapeHtml(EVENT.series)}</p>
+            <h1>${escapeHtml(EVENT.name)}<span>CONTROL CENTER</span></h1>
+            <p>${escapeHtml(EVENT.dateLabel)}</p>
+          </div>
         </div>
         <div class="operative-pill" aria-label="Estado operativo">
           <span></span>
@@ -82,8 +88,14 @@ function navButton(item, activeView, compact = false) {
   `;
 }
 
-function saveAndRender({ scrollTop = false } = {}) {
+function saveAndRender({ scrollTop = false, remote = false } = {}) {
   saveState(state);
+  if (remote) {
+    queueRemoteSave(state, {
+      onSuccess: handleRemoteSaveSuccess,
+      onError: handleRemoteError
+    });
+  }
   render();
   if (scrollTop) {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -94,7 +106,7 @@ function updateRecord(collection, id, field, value) {
   if (!state[collection]?.[id]) return;
   state[collection][id][field] = value;
   touch(state[collection][id]);
-  saveAndRender();
+  saveAndRender({ remote: true });
 }
 
 function toggleRecord(collection, id, field, checked) {
@@ -109,7 +121,7 @@ app.addEventListener("click", (event) => {
   const viewButton = event.target.closest("[data-view]");
   if (viewButton) {
     state.ui.view = viewButton.dataset.view;
-    saveAndRender({ scrollTop: true });
+    saveAndRender({ scrollTop: true, remote: false });
     return;
   }
 
@@ -120,31 +132,43 @@ app.addEventListener("click", (event) => {
 
   if (action === "set-checklist-filter") {
     state.ui[filter] = value;
-    saveAndRender();
+    saveAndRender({ remote: false });
   }
 
   if (action === "open-incident-form") {
     state.ui.view = "incidents";
     state.ui.incidentFormOpen = true;
-    saveAndRender({ scrollTop: true });
+    saveAndRender({ scrollTop: true, remote: false });
   }
 
   if (action === "toggle-incident-form") {
     state.ui.incidentFormOpen = !state.ui.incidentFormOpen;
-    saveAndRender();
+    saveAndRender({ remote: false });
   }
 
   if (action === "select-map-zone") {
     state.ui.selectedMapZone = id;
-    saveAndRender();
+    saveAndRender({ remote: false });
   }
 
   if (action === "reset-event-data") {
     const confirmed = confirm("¿Reiniciar todos los datos guardados de EXPO 12H en este navegador?");
     if (confirmed) {
       state = resetState();
-      saveAndRender({ scrollTop: true });
+      saveAndRender({ scrollTop: true, remote: true });
     }
+  }
+
+  if (action === "sync-test") {
+    runSyncTest();
+  }
+
+  if (action === "sync-pull") {
+    runSyncPull();
+  }
+
+  if (action === "sync-push") {
+    runSyncPush();
   }
 });
 
@@ -170,19 +194,37 @@ app.addEventListener("change", (event) => {
 
   if (action === "set-checklist-filter") {
     state.ui[filter] = value;
-    saveAndRender();
+    saveAndRender({ remote: false });
   }
 
   if (action === "set-ui-field") {
     state.ui[field] = value;
-    saveAndRender();
+    saveAndRender({ remote: false });
+  }
+
+  if (action === "update-sync-field") {
+    state.sync[field] = value;
+    if (field === "webAppUrl") {
+      state.sync.status = value ? "configurado" : "local";
+      state.sync.message = value ? "URL guardada. Prueba la conexión." : "Sin conexión activa";
+      state.sync.lastError = "";
+    }
+    saveAndRender({ remote: false });
+  }
+
+  if (action === "toggle-sync-enabled") {
+    state.sync.enabled = value;
+    state.sync.status = value ? "configurado" : "local";
+    state.sync.message = value ? "Sincronización activada" : "Sincronización pausada";
+    state.sync.lastError = "";
+    saveAndRender({ remote: false });
   }
 
   if (action === "toggle-checklist-complete") {
     const record = state.checklist[id];
     record.status = target.checked ? "completado" : "pendiente";
     touch(record);
-    saveAndRender();
+    saveAndRender({ remote: true });
   }
 
   if (action === "update-checklist-field") {
@@ -229,7 +271,7 @@ app.addEventListener("change", (event) => {
       incident.horaResolucion = currentTime();
     }
     touch(incident);
-    saveAndRender();
+    saveAndRender({ remote: true });
   }
 
   if (action === "update-broadcast-field") {
@@ -262,10 +304,11 @@ app.addEventListener("submit", (event) => {
     updatedAt: now
   });
   state.ui.incidentFormOpen = false;
-  saveAndRender();
+  saveAndRender({ remote: true });
 });
 
 render();
+bootstrapSync();
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
@@ -273,4 +316,113 @@ if ("serviceWorker" in navigator) {
       console.warn("Service worker no registrado.", error);
     });
   });
+}
+
+function setSyncStatus(patch, shouldRender = state.ui.view === "config") {
+  state.sync = {
+    ...state.sync,
+    ...patch
+  };
+  saveState(state);
+  if (shouldRender) render();
+}
+
+function handleRemoteSaveSuccess(result = {}) {
+  setSyncStatus({
+    status: "online",
+    message: "Estado enviado a Google Sheets",
+    lastPushAt: result.savedAt || new Date().toISOString(),
+    lastError: ""
+  });
+}
+
+function handleRemoteError(error) {
+  setSyncStatus({
+    status: "error",
+    message: "No se pudo sincronizar",
+    lastError: error.message
+  });
+}
+
+async function runSyncTest() {
+  try {
+    setSyncStatus({ status: "sincronizando", message: "Probando conexión con Apps Script", lastError: "" }, true);
+    const response = await testConnection(state.sync.webAppUrl);
+    if (!response.ok) throw new Error(response.error || "Respuesta inválida de Apps Script.");
+    setSyncStatus({
+      status: "online",
+      message: "Conexión activa con Google Sheets",
+      spreadsheetId: response.spreadsheetId || state.sync.spreadsheetId,
+      lastError: ""
+    }, true);
+  } catch (error) {
+    handleRemoteError(error);
+  }
+}
+
+async function runSyncPull() {
+  try {
+    setSyncStatus({ status: "sincronizando", message: "Leyendo estado remoto", lastError: "" }, true);
+    const response = await pullState(state.sync.webAppUrl);
+    if (!response.state) {
+      setSyncStatus({
+        status: "online",
+        message: "Conexión activa. La hoja todavía no tiene estado guardado.",
+        lastPullAt: new Date().toISOString(),
+        lastError: ""
+      }, true);
+      return;
+    }
+    adoptRemoteState(response.state, "Estado remoto cargado desde Google Sheets");
+  } catch (error) {
+    handleRemoteError(error);
+  }
+}
+
+async function runSyncPush() {
+  try {
+    setSyncStatus({ status: "sincronizando", message: "Enviando estado a Google Sheets", lastError: "" }, true);
+    const response = await pushState(state);
+    handleRemoteSaveSuccess(response);
+  } catch (error) {
+    handleRemoteError(error);
+  }
+}
+
+async function bootstrapSync() {
+  if (!canSync(state)) return;
+  try {
+    setSyncStatus({ status: "sincronizando", message: "Sincronizando al iniciar", lastError: "" }, false);
+    const response = await pullState(state.sync.webAppUrl);
+    if (response.state?.meta?.updatedAt && new Date(response.state.meta.updatedAt) > new Date(state.meta.updatedAt)) {
+      adoptRemoteState(response.state, "Estado remoto más reciente cargado");
+    } else {
+      queueRemoteSave(state, {
+        onSuccess: handleRemoteSaveSuccess,
+        onError: handleRemoteError
+      });
+    }
+  } catch (error) {
+    handleRemoteError(error);
+  }
+}
+
+function adoptRemoteState(remoteState, message) {
+  const localSync = { ...state.sync };
+  const localUi = { ...state.ui };
+  state = normalizeState(remoteState);
+  state.sync = {
+    ...state.sync,
+    ...localSync,
+    status: "online",
+    message,
+    lastPullAt: new Date().toISOString(),
+    lastError: ""
+  };
+  state.ui = {
+    ...state.ui,
+    ...localUi
+  };
+  saveState(state);
+  render();
 }

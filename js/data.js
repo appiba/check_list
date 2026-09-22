@@ -6,6 +6,8 @@ export const EVENT = {
   dateLabel: "24 SEP · PARQUE CÉNTRICA · IBARRA",
   location: "Parque Céntrica · Ibarra",
   expectedUrl: "https://appiba.github.io/check_list/",
+  logoPrimary: "./assets/expo12h-logo-primary.png",
+  logoAlt: "./assets/expo12h-logo-alt.png",
   vehicleCount: 58,
   activationCount: 26
 };
