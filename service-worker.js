@@ -1,4 +1,4 @@
-const CACHE_NAME = "expo12h-control-center-v6";
+const CACHE_NAME = "expo12h-control-center-v7";
 const APP_ASSETS = [
   "./",
   "./index.html",
@@ -6,6 +6,7 @@ const APP_ASSETS = [
   "./assets/expo12h-logo-alt.png",
   "./assets/expo12h-logo-primary.png",
   "./assets/icon.svg",
+  "./assets/parque-centrica-map.png",
   "./css/styles.css",
   "./js/activations.js",
   "./js/app.js",

@@ -876,3 +876,23 @@ export const MAP_ZONES = [
   ["seguridad-a", "SEGURIDAD A", "Josue"],
   ["seguridad-b", "SEGURIDAD B", "Bryan Urbina"]
 ].map(([id, name, responsable]) => ({ id, name, responsable }));
+
+export const MAP_GRID = {
+  columns: 6,
+  rows: 6,
+  positions: {
+    "parqueadero-a": "r1-c5",
+    "parqueadero-b": "r2-c5",
+    tarima: "r3-c3",
+    "punto-policia": "r2-c6",
+    "zona-fest-derecha": "r4-c4",
+    "zona-fest-izquierda": "r4-c5",
+    "carril-vip": "r5-c5",
+    "carpas-publico": "r3-c2",
+    "pre-grid": "r5-c3",
+    "ingreso-vehiculos": "r6-c1",
+    "salida-vehiculos": "r6-c2",
+    "seguridad-a": "r2-c2",
+    "seguridad-b": "r5-c6"
+  }
+};

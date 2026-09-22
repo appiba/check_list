@@ -762,6 +762,202 @@ textarea {
   gap: 12px;
 }
 
+.map-board-panel {
+  min-width: 0;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius);
+  background:
+    linear-gradient(90deg, rgba(242, 201, 76, 0.13) 1px, transparent 1px) 0 0 / 44px 44px,
+    linear-gradient(180deg, rgba(21, 27, 36, 0.96), rgba(12, 16, 22, 0.96));
+}
+
+.map-board-panel::-webkit-scrollbar {
+  display: none;
+}
+
+.map-help,
+.map-instruction,
+.map-list-head span:last-child,
+.map-detail-actions span {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.event-map-grid {
+  min-width: 620px;
+  min-height: 620px;
+  display: grid;
+  grid-template-columns: repeat(var(--map-cols), minmax(86px, 1fr));
+  grid-auto-rows: minmax(86px, 1fr);
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid rgba(242, 201, 76, 0.26);
+  border-radius: var(--radius);
+  background:
+    linear-gradient(rgba(5, 7, 10, 0.3), rgba(5, 7, 10, 0.58)),
+    url("../assets/parque-centrica-map.png") center / cover no-repeat;
+}
+
+.map-cell {
+  position: relative;
+  min-height: 86px;
+  display: grid;
+  align-items: stretch;
+  padding: 20px 7px 7px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.035);
+  transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+}
+
+.map-cell-label {
+  position: absolute;
+  top: 5px;
+  left: 7px;
+  color: rgba(216, 221, 229, 0.6);
+  font-size: 0.62rem;
+  font-weight: 900;
+}
+
+.map-cell.filled {
+  border-color: rgba(242, 201, 76, 0.34);
+  background: rgba(242, 201, 76, 0.055);
+}
+
+.map-cell.active,
+.map-cell.drop-target {
+  border-color: rgba(242, 201, 76, 0.76);
+  background: var(--gold-soft);
+  box-shadow: inset 0 0 0 1px rgba(242, 201, 76, 0.22);
+}
+
+.map-empty-zone,
+.map-placed-zone {
+  width: 100%;
+  min-height: 52px;
+  border: 1px dashed rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius);
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.025);
+  font-size: 0.64rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.map-empty-zone {
+  opacity: 0;
+}
+
+.map-cell.empty:hover .map-empty-zone,
+.map-cell.empty:focus-within .map-empty-zone {
+  opacity: 1;
+}
+
+.map-placed-zone {
+  display: grid;
+  align-content: center;
+  gap: 4px;
+  border-style: solid;
+  border-color: rgba(242, 201, 76, 0.44);
+  color: var(--gold);
+  background: rgba(5, 7, 10, 0.72);
+  touch-action: none;
+  user-select: none;
+}
+
+.map-placed-zone strong,
+.map-placed-zone span {
+  overflow-wrap: anywhere;
+}
+
+.map-placed-zone span {
+  color: var(--muted-strong);
+  font-size: 0.6rem;
+}
+
+.map-zone-list {
+  align-content: start;
+}
+
+.map-list-head {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.map-zone-card {
+  touch-action: none;
+  user-select: none;
+}
+
+.map-zone-card.drag-source,
+.map-placed-zone.drag-source {
+  opacity: 0.36;
+}
+
+.map-zone-card span {
+  color: var(--muted);
+}
+
+.map-drag-ghost {
+  position: fixed;
+  z-index: 9999;
+  width: 128px;
+  min-height: 58px;
+  display: grid;
+  place-items: center;
+  padding: 9px;
+  border: 1px solid rgba(242, 201, 76, 0.78);
+  border-radius: var(--radius);
+  color: var(--gold);
+  background: rgba(5, 7, 10, 0.94);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+  font-size: 0.7rem;
+  font-weight: 950;
+  text-align: center;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+.map-detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.quantity-control {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  gap: 8px;
+}
+
+.quantity-control button {
+  min-height: 42px;
+  border: 1px solid rgba(242, 201, 76, 0.42);
+  border-radius: var(--radius);
+  color: var(--gold);
+  background: var(--gold-soft);
+  font-size: 1rem;
+  font-weight: 950;
+}
+
+.quantity-control input {
+  text-align: center;
+  font-weight: 900;
+}
+
 .render-placeholder {
   min-height: 260px;
   display: grid;

@@ -18,6 +18,8 @@ let state = loadState();
 let searchRenderTimer;
 let bottomNavScrollLeft = 0;
 let centerActiveNavOnRender = true;
+let mapDrag = null;
+let suppressNextClick = false;
 
 const NAV_ITEMS = [
   { id: "dashboard", label: "INICIO", short: "INICIO" },
@@ -142,8 +144,44 @@ function saveAndRender({ scrollTop = false, remote = false } = {}) {
 
 function updateRecord(collection, id, field, value) {
   if (!state[collection]?.[id]) return;
-  state[collection][id][field] = value;
+  state[collection][id][field] = collection === "map" && field === "quantity"
+    ? Math.max(0, Number.parseInt(value, 10) || 0)
+    : value;
   touch(state[collection][id]);
+  saveAndRender({ remote: true });
+}
+
+function moveMapZone(zoneId, targetCellId) {
+  if (!state.map?.[zoneId] || !targetCellId) return;
+
+  const sourceCellId = state.map[zoneId].gridPosition || "";
+  const displacedZoneId = Object.entries(state.map).find(([id, record]) => id !== zoneId && record.gridPosition === targetCellId)?.[0];
+
+  if (displacedZoneId) {
+    state.map[displacedZoneId].gridPosition = sourceCellId;
+    touch(state.map[displacedZoneId]);
+  }
+
+  state.map[zoneId].gridPosition = targetCellId;
+  touch(state.map[zoneId]);
+  state.ui.selectedMapZone = zoneId;
+  saveAndRender({ remote: true });
+}
+
+function removeMapZone(zoneId) {
+  if (!state.map?.[zoneId]) return;
+  state.map[zoneId].gridPosition = "";
+  touch(state.map[zoneId]);
+  state.ui.selectedMapZone = zoneId;
+  saveAndRender({ remote: true });
+}
+
+function adjustMapQuantity(zoneId, delta) {
+  if (!state.map?.[zoneId]) return;
+  const current = Number.parseInt(state.map[zoneId].quantity, 10) || 0;
+  state.map[zoneId].quantity = Math.max(0, current + delta);
+  touch(state.map[zoneId]);
+  state.ui.selectedMapZone = zoneId;
   saveAndRender({ remote: true });
 }
 
@@ -155,7 +193,64 @@ function currentTime() {
   return new Date().toTimeString().slice(0, 5);
 }
 
+function createMapDragGhost(source) {
+  const ghost = document.createElement("div");
+  ghost.className = "map-drag-ghost";
+  ghost.textContent = source.querySelector("strong")?.textContent || source.textContent.trim();
+  document.body.appendChild(ghost);
+  return ghost;
+}
+
+function moveMapDragGhost(x, y) {
+  if (!mapDrag?.ghost) return;
+  mapDrag.ghost.style.transform = `translate(${x + 12}px, ${y + 12}px)`;
+}
+
+function updateMapDropTarget(x, y) {
+  const targetCell = document.elementFromPoint(x, y)?.closest("[data-map-cell]");
+  if (targetCell === mapDrag.targetCell) return;
+  mapDrag.targetCell?.classList.remove("drop-target");
+  mapDrag.targetCell = targetCell;
+  mapDrag.targetCell?.classList.add("drop-target");
+}
+
+function finishMapDrag(event) {
+  if (!mapDrag || event.pointerId !== mapDrag.pointerId) return;
+  const { dragging, targetCell, zoneId } = mapDrag;
+  cleanupMapDrag();
+
+  if (dragging) {
+    suppressNextClick = true;
+    window.setTimeout(() => {
+      suppressNextClick = false;
+    }, 350);
+  }
+
+  if (dragging && targetCell?.dataset.mapCell) {
+    moveMapZone(zoneId, targetCell.dataset.mapCell);
+  }
+}
+
+function cancelMapDrag(event) {
+  if (!mapDrag || event.pointerId !== mapDrag.pointerId) return;
+  cleanupMapDrag();
+}
+
+function cleanupMapDrag() {
+  mapDrag?.targetCell?.classList.remove("drop-target");
+  mapDrag?.source?.classList.remove("drag-source");
+  mapDrag?.ghost?.remove();
+  mapDrag = null;
+}
+
 app.addEventListener("click", (event) => {
+  if (suppressNextClick) {
+    event.preventDefault();
+    event.stopPropagation();
+    suppressNextClick = false;
+    return;
+  }
+
   const viewButton = event.target.closest("[data-view]");
   if (viewButton) {
     const bottomNav = viewButton.closest(".bottom-nav");
@@ -195,6 +290,18 @@ app.addEventListener("click", (event) => {
     saveAndRender({ remote: false });
   }
 
+  if (action === "place-map-zone") {
+    moveMapZone(state.ui.selectedMapZone, target.dataset.cellId);
+  }
+
+  if (action === "remove-map-zone") {
+    removeMapZone(id);
+  }
+
+  if (action === "adjust-map-quantity") {
+    adjustMapQuantity(id, Number.parseInt(target.dataset.delta, 10) || 0);
+  }
+
   if (action === "reset-event-data") {
     const confirmed = confirm("¿Reiniciar todos los datos guardados de EXPO 12H en este navegador?");
     if (confirmed) {
@@ -222,6 +329,43 @@ app.addEventListener("scroll", (event) => {
     bottomNavScrollLeft = event.target.scrollLeft;
   }
 }, true);
+
+app.addEventListener("pointerdown", (event) => {
+  const dragSource = event.target.closest("[data-map-draggable]");
+  if (!dragSource || event.button !== 0) return;
+
+  mapDrag = {
+    pointerId: event.pointerId,
+    zoneId: dragSource.dataset.id,
+    source: dragSource,
+    startX: event.clientX,
+    startY: event.clientY,
+    dragging: false,
+    ghost: null,
+    targetCell: null
+  };
+  dragSource.setPointerCapture?.(event.pointerId);
+});
+
+app.addEventListener("pointermove", (event) => {
+  if (!mapDrag || event.pointerId !== mapDrag.pointerId) return;
+
+  const distance = Math.hypot(event.clientX - mapDrag.startX, event.clientY - mapDrag.startY);
+  if (!mapDrag.dragging && distance < 8) return;
+
+  if (!mapDrag.dragging) {
+    mapDrag.dragging = true;
+    mapDrag.ghost = createMapDragGhost(mapDrag.source);
+    mapDrag.source.classList.add("drag-source");
+  }
+
+  event.preventDefault();
+  moveMapDragGhost(event.clientX, event.clientY);
+  updateMapDropTarget(event.clientX, event.clientY);
+});
+
+app.addEventListener("pointerup", finishMapDrag);
+app.addEventListener("pointercancel", cancelMapDrag);
 
 app.addEventListener("input", (event) => {
   const target = event.target;

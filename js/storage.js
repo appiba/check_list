@@ -4,6 +4,7 @@ import {
   BROADCAST,
   CHECKLIST,
   MAP_ZONES,
+  MAP_GRID,
   STAFF,
   TEAM,
   TIMELINE,
@@ -147,6 +148,8 @@ export function createDefaultState() {
         {
           responsable: zone.responsable,
           status: "LISTO",
+          quantity: 1,
+          gridPosition: MAP_GRID.positions[zone.id] || "",
           tasks: "",
           incident: "",
           updatedAt: ""
