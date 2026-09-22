@@ -16,6 +16,8 @@ import { renderVehicles } from "./vehicles.js";
 const app = document.querySelector("#app");
 let state = loadState();
 let searchRenderTimer;
+let bottomNavScrollLeft = 0;
+let centerActiveNavOnRender = true;
 
 const NAV_ITEMS = [
   { id: "dashboard", label: "INICIO", short: "INICIO" },
@@ -30,7 +32,18 @@ const NAV_ITEMS = [
   { id: "config", label: "CONFIGURACIÓN", short: "CONFIG" }
 ];
 
-const MOBILE_ITEMS = ["dashboard", "checklist", "timeline", "team", "vehicles"];
+const NAV_ICONS = {
+  dashboard: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.6 12 3l9 7.6v9.1a1.3 1.3 0 0 1-1.3 1.3h-4.2v-6.4h-7V21H4.3A1.3 1.3 0 0 1 3 19.7v-9.1Z"/></svg>',
+  checklist: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.3 16.4 5.8 13l-2 2 5.5 5.4L20.5 7.1l-2.1-1.8-9.1 11.1Z"/><path d="M4 5h10v2.4H4V5Zm0 5h7v2.4H4V10Z"/></svg>',
+  timeline: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2h2.4v2h5.2V2H17v2h2.2A2.8 2.8 0 0 1 22 6.8v11.4a2.8 2.8 0 0 1-2.8 2.8H4.8A2.8 2.8 0 0 1 2 18.2V6.8A2.8 2.8 0 0 1 4.8 4H7V2Zm12.6 7.2H4.4v8.8c0 .4.3.6.6.6h14c.3 0 .6-.2.6-.6V9.2Z"/></svg>',
+  team: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.4 12.2a4.1 4.1 0 1 1 0-8.2 4.1 4.1 0 0 1 0 8.2Zm7.7-.4a3.4 3.4 0 1 1 0-6.8 3.4 3.4 0 0 1 0 6.8ZM2.2 21v-2.2c0-3 2.7-5.4 6.2-5.4s6.2 2.4 6.2 5.4V21H2.2Zm13.8 0v-2.3c0-1.8-.7-3.4-1.9-4.6.6-.2 1.3-.3 2-.3 3.2 0 5.7 2.2 5.7 5V21H16Z"/></svg>',
+  vehicles: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h12.2c1.2 0 2.2 1 2.2 2.2v2.4H22V11h-2.6v8.8l-4.1-2.1-4.1 2.1-4.1-2.1L3 19.8V4h2Zm1.2 2.4v9.5l.9-.5 4.1 2.1 4.1-2.1 1.7.9V6.4H6.2Zm2.1 2h6.8v2.2H8.3V8.4Zm0 4h5.1v2.2H8.3v-2.2Z"/></svg>',
+  activations: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.2 15.8 5v14L3 13.8v-3.6Zm15.1-2.4 2-1.1a9.7 9.7 0 0 1 0 10.6l-2-1.1a7.4 7.4 0 0 0 0-8.4ZM5.4 11.9v.2l8 3.2V8.7l-8 3.2Zm.8 3.2 3.1 1.2-.8 3.7H5.9l.3-4.9Z"/></svg>',
+  incidents: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8 22 20H2L12 2.8Zm0 4.9-5.9 10h11.8L12 7.7Zm-1.1 2.8h2.2v4.4h-2.2v-4.4Zm0 5.6h2.2v2.1h-2.2v-2.1Z"/></svg>',
+  broadcast: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.8 5h11.8A2.4 2.4 0 0 1 18 7.4v1.9l3.6-2v9.4l-3.6-2v1.9a2.4 2.4 0 0 1-2.4 2.4H3.8A2.4 2.4 0 0 1 1.4 16.6V7.4A2.4 2.4 0 0 1 3.8 5Zm.1 2.4v9.2h11.7V7.4H3.9Z"/></svg>',
+  map: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.6a7 7 0 0 1 7 7c0 5.2-7 11.8-7 11.8S5 14.8 5 9.6a7 7 0 0 1 7-7Zm0 2.5a4.5 4.5 0 0 0-4.5 4.5c0 2.7 2.8 6.2 4.5 8 1.7-1.8 4.5-5.3 4.5-8A4.5 4.5 0 0 0 12 5.1Zm0 2.4a2.2 2.2 0 1 1 0 4.4 2.2 2.2 0 0 1 0-4.4Z"/></svg>',
+  config: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m19.4 13.2.1-1.2-.1-1.2 2.1-1.6-2-3.5-2.5 1a8.5 8.5 0 0 0-2.1-1.2L14.5 3h-4l-.4 2.5A8.5 8.5 0 0 0 8 6.7l-2.4-1-2.1 3.5 2.1 1.6-.1 1.2.1 1.2-2.1 1.6 2.1 3.5L8 17.3c.6.5 1.3.9 2.1 1.2l.4 2.5h4l.4-2.5c.8-.3 1.5-.7 2.1-1.2l2.5 1 2-3.5-2.1-1.6ZM12.5 15.6a3.6 3.6 0 1 1 0-7.2 3.6 3.6 0 0 1 0 7.2Z"/></svg>'
+};
 
 const renderers = {
   dashboard: renderDashboard,
@@ -75,17 +88,42 @@ function render() {
       ${renderers[activeView](state)}
     </main>
     <nav class="bottom-nav" aria-label="Navegación móvil">
-      ${NAV_ITEMS.filter((item) => MOBILE_ITEMS.includes(item.id)).map((item) => navButton(item, activeView, true)).join("")}
+      ${NAV_ITEMS.map((item) => navButton(item, activeView, "mobile")).join("")}
     </nav>
+  `;
+  syncBottomNavPosition({ center: centerActiveNavOnRender });
+  centerActiveNavOnRender = false;
+}
+
+function navButton(item, activeView, variant = "desktop") {
+  const isActive = item.id === activeView;
+  const icon = variant === "mobile" ? `<span class="nav-icon">${NAV_ICONS[item.id] || ""}</span>` : "";
+  return `
+    <button class="${isActive ? "active" : ""}" type="button" data-view="${item.id}" ${isActive ? 'aria-current="page"' : ""}>
+      ${icon}
+      <span class="nav-label">${escapeHtml(item.label)}</span>
+    </button>
   `;
 }
 
-function navButton(item, activeView, compact = false) {
-  return `
-    <button class="${item.id === activeView ? "active" : ""}" type="button" data-view="${item.id}">
-      <span>${escapeHtml(compact ? item.short : item.label)}</span>
-    </button>
-  `;
+function syncBottomNavPosition({ center = false } = {}) {
+  window.requestAnimationFrame(() => {
+    const nav = app.querySelector(".bottom-nav");
+    if (!nav) return;
+    nav.scrollLeft = bottomNavScrollLeft;
+
+    const activeButton = nav.querySelector("button.active");
+    if (!activeButton) return;
+
+    const navRect = nav.getBoundingClientRect();
+    const buttonRect = activeButton.getBoundingClientRect();
+    const isVisible = buttonRect.left >= navRect.left + 14 && buttonRect.right <= navRect.right - 14;
+
+    if (center || !isVisible) {
+      const targetLeft = activeButton.offsetLeft - (nav.clientWidth - activeButton.offsetWidth) / 2;
+      nav.scrollTo({ left: Math.max(0, targetLeft), behavior: center ? "smooth" : "auto" });
+    }
+  });
 }
 
 function saveAndRender({ scrollTop = false, remote = false } = {}) {
@@ -120,6 +158,11 @@ function currentTime() {
 app.addEventListener("click", (event) => {
   const viewButton = event.target.closest("[data-view]");
   if (viewButton) {
+    const bottomNav = viewButton.closest(".bottom-nav");
+    if (bottomNav) {
+      bottomNavScrollLeft = bottomNav.scrollLeft;
+    }
+    centerActiveNavOnRender = true;
     state.ui.view = viewButton.dataset.view;
     saveAndRender({ scrollTop: true, remote: false });
     return;
@@ -136,6 +179,7 @@ app.addEventListener("click", (event) => {
   }
 
   if (action === "open-incident-form") {
+    centerActiveNavOnRender = true;
     state.ui.view = "incidents";
     state.ui.incidentFormOpen = true;
     saveAndRender({ scrollTop: true, remote: false });
@@ -154,6 +198,7 @@ app.addEventListener("click", (event) => {
   if (action === "reset-event-data") {
     const confirmed = confirm("¿Reiniciar todos los datos guardados de EXPO 12H en este navegador?");
     if (confirmed) {
+      centerActiveNavOnRender = true;
       state = resetState();
       saveAndRender({ scrollTop: true, remote: true });
     }
@@ -171,6 +216,12 @@ app.addEventListener("click", (event) => {
     runSyncPush();
   }
 });
+
+app.addEventListener("scroll", (event) => {
+  if (event.target instanceof HTMLElement && event.target.classList.contains("bottom-nav")) {
+    bottomNavScrollLeft = event.target.scrollLeft;
+  }
+}, true);
 
 app.addEventListener("input", (event) => {
   const target = event.target;
