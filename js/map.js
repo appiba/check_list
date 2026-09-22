@@ -34,6 +34,9 @@ export function renderMap(state) {
   const placements = getAllPlacements(state);
   const selectedPlacements = getZonePlacements(state, selectedZone.id);
   const placedSelected = selectedPlacements.filter((placement) => placement.cellId).length;
+  const selectedPlacementId = state.ui.selectedMapPlacement || "";
+  const selectedPlacedLabel = selectedPlacements.find((placement) => placement.id === selectedPlacementId && placement.cellId)?.cellId;
+  const mapMode = state.ui.mapMode === "pan" ? "pan" : "place";
   const mapZoom = Number(state.ui.mapZoom || 1);
   const relatedTasks = getRelatedTasks(selectedZone.name);
   const relatedIncidents = state.incidents.filter((incident) => {
@@ -56,22 +59,28 @@ export function renderMap(state) {
           <div class="panel-header map-board-header">
             <div>
               <span class="section-kicker">Cuadrícula operativa</span>
-              <p class="map-help">Selecciona un elemento y toca un cuadro. Usa - para quitar del mapa.</p>
+              <p class="map-help">Selecciona un elemento y toca un cuadro. Cambia a mover mapa para panear con el dedo.</p>
             </div>
-            <div class="map-zoom-controls" aria-label="Zoom del mapa">
-              <button type="button" data-action="adjust-map-zoom" data-delta="-0.15">-</button>
-              <span>${Math.round(mapZoom * 100)}%</span>
-              <button type="button" data-action="adjust-map-zoom" data-delta="0.15">+</button>
+            <div class="map-toolbar">
+              <div class="map-mode-controls" aria-label="Modo del mapa">
+                <button class="${mapMode === "place" ? "active" : ""}" type="button" data-action="set-map-mode" data-mode="place">Colocar</button>
+                <button class="${mapMode === "pan" ? "active" : ""}" type="button" data-action="set-map-mode" data-mode="pan">Mover mapa</button>
+              </div>
+              <div class="map-zoom-controls" aria-label="Zoom del mapa">
+                <button type="button" data-action="adjust-map-zoom" data-delta="-0.15">-</button>
+                <span>${Math.round(mapZoom * 100)}%</span>
+                <button type="button" data-action="adjust-map-zoom" data-delta="0.15">+</button>
+              </div>
             </div>
           </div>
-          <div class="map-viewport" data-map-viewport="true" aria-label="Vista desplazable del mapa">
+          <div class="map-viewport" data-map-viewport="true" data-map-mode="${mapMode}" aria-label="Vista desplazable del mapa">
             <div class="event-map-grid" style="--map-cols: ${MAP_GRID.columns}; --map-rows: ${MAP_GRID.rows}; --map-zoom: ${mapZoom};" aria-label="Cuadrícula editable del evento">
               ${buildMapAxes()}
               ${buildMapCells()}
-              ${placements.map((placement) => buildPlacedItem(state, placement, selectedZone.id)).join("")}
+              ${placements.map((placement) => buildPlacedItem(state, placement, selectedZone.id, selectedPlacementId)).join("")}
             </div>
           </div>
-          <p class="map-instruction">Toca un cuadro vacío para colocar el elemento seleccionado. Usa + para crear más, - para quitar, y arrastra el fondo para panear.</p>
+          <p class="map-instruction">Modo colocar: toca un cuadro para ubicar el elemento seleccionado. Modo mover mapa: arrastra la imagen completa para verla mejor.</p>
         </div>
 
         <div class="map-zone-grid map-zone-list" aria-label="Elementos del mapa">
@@ -93,7 +102,7 @@ export function renderMap(state) {
             </select>
             <button type="submit">Crear</button>
           </form>
-          ${mapZones.map((zone) => buildZoneCard(state, zone, selectedZone.id)).join("")}
+          ${mapZones.map((zone) => buildZoneCard(state, zone, selectedZone.id, selectedPlacementId)).join("")}
         </div>
       </article>
 
@@ -104,8 +113,8 @@ export function renderMap(state) {
         </div>
         <h3>${escapeHtml(selectedZone.name)}</h3>
         <div class="map-detail-actions">
-          <span>${escapeHtml(zoneType(selectedZone).label)} · ${placedSelected}/${selectedPlacements.length} colocados</span>
-          <button class="mini-action" type="button" data-action="remove-map-zone" data-id="${escapeHtml(selectedZone.id)}">Quitar último del mapa</button>
+          <span>${escapeHtml(zoneType(selectedZone).label)} · ${placedSelected}/${selectedPlacements.length} colocados${selectedPlacedLabel ? ` · seleccionado ${escapeHtml(cellLabelFromId(selectedPlacedLabel))}` : ""}</span>
+          <button class="mini-action" type="button" data-action="remove-map-zone" data-id="${escapeHtml(selectedZone.id)}" data-placement-id="${escapeHtml(selectedPlacementId)}">Quitar seleccionado del mapa</button>
         </div>
         <div class="task-fields compact-fields">
           <label>
@@ -187,15 +196,16 @@ function buildMapCells() {
   return cells.join("");
 }
 
-function buildPlacedItem(state, placement, selectedZoneId) {
+function buildPlacedItem(state, placement, selectedZoneId, selectedPlacementId) {
   const zone = getMapZones(state).find((item) => item.id === placement.zoneId);
   if (!zone || !placement.cellId) return "";
   const record = state.map[zone.id];
   const type = zoneType(zone);
   const position = parseCell(placement.cellId);
+  const isActive = placement.id === selectedPlacementId || (!selectedPlacementId && zone.id === selectedZoneId);
   return `
     <button
-      class="map-placed-zone type-${type.className} ${zone.id === selectedZoneId ? "active" : ""}"
+      class="map-placed-zone type-${type.className} ${isActive ? "active" : ""}"
       type="button"
       aria-label="${escapeHtml(zone.name)} ${escapeHtml(record?.status || "LISTO")}"
       title="${escapeHtml(zone.name)} · ${escapeHtml(record?.status || "LISTO")}"
@@ -211,10 +221,11 @@ function buildPlacedItem(state, placement, selectedZoneId) {
   `;
 }
 
-function buildZoneCard(state, zone, selectedZoneId) {
+function buildZoneCard(state, zone, selectedZoneId, selectedPlacementId) {
   const type = zoneType(zone);
   const placements = getZonePlacements(state, zone.id);
   const placed = placements.filter((placement) => placement.cellId).length;
+  const selectedPlacementAttr = zone.id === selectedZoneId && selectedPlacementId ? ` data-placement-id="${escapeHtml(selectedPlacementId)}"` : "";
   return `
     <div class="zone-button map-zone-card type-${type.className} ${zone.id === selectedZoneId ? "active" : ""}">
       <button class="map-zone-main" type="button" data-action="select-map-zone" data-id="${escapeHtml(zone.id)}">
@@ -224,7 +235,7 @@ function buildZoneCard(state, zone, selectedZoneId) {
           <em>${placed}/${placements.length} colocados</em>
         </span>
       </button>
-      <button class="map-remove-btn" type="button" data-action="remove-map-zone" data-id="${escapeHtml(zone.id)}" aria-label="Quitar ${escapeHtml(zone.name)} del mapa">-</button>
+      <button class="map-remove-btn" type="button" data-action="remove-map-zone" data-id="${escapeHtml(zone.id)}"${selectedPlacementAttr} aria-label="Quitar ${escapeHtml(zone.name)} del mapa">-</button>
       <button class="map-add-btn" type="button" data-action="adjust-map-quantity" data-id="${escapeHtml(zone.id)}" data-delta="1" aria-label="Agregar ${escapeHtml(zone.name)}">+</button>
     </div>
   `;
@@ -280,6 +291,11 @@ function parseCell(cellId) {
 
 function cellLabel(row, column) {
   return `${rowLetter(row)}${column}`;
+}
+
+function cellLabelFromId(cellId) {
+  const position = parseCell(cellId);
+  return cellLabel(position.row, position.column);
 }
 
 function rowLetter(row) {

@@ -48,6 +48,8 @@ export function createDefaultState() {
       activationSearch: "",
       incidentFormOpen: false,
       selectedMapZone: "parqueadero-a",
+      selectedMapPlacement: "",
+      mapMode: "place",
       mapZoom: 1
     },
     checklist: Object.fromEntries(

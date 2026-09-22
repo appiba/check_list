@@ -786,6 +786,37 @@ textarea {
   align-items: center;
 }
 
+.map-toolbar {
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+}
+
+.map-mode-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.map-mode-controls button {
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius);
+  color: var(--muted-strong);
+  background: rgba(255, 255, 255, 0.045);
+  font-size: 0.68rem;
+  font-weight: 950;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.map-mode-controls button.active {
+  border-color: rgba(242, 201, 76, 0.62);
+  color: #05070a;
+  background: var(--gold);
+}
+
 .map-help,
 .map-instruction,
 .map-list-head span:last-child,
@@ -827,7 +858,6 @@ textarea {
   max-height: 66vh;
   overflow: auto;
   overscroll-behavior: contain;
-  cursor: grab;
   touch-action: none;
   scrollbar-width: none;
 }
@@ -838,6 +868,19 @@ textarea {
 
 .map-viewport.panning {
   cursor: grabbing;
+}
+
+.map-viewport[data-map-mode="place"] {
+  cursor: crosshair;
+}
+
+.map-viewport[data-map-mode="pan"] {
+  cursor: grab;
+}
+
+.map-viewport[data-map-mode="pan"] .map-cell,
+.map-viewport[data-map-mode="pan"] .map-placed-zone {
+  cursor: grab;
 }
 
 .event-map-grid {
