@@ -13,6 +13,11 @@ import {
 export const STORAGE_KEY = "expo12h-control-center-v1";
 
 const nowIso = () => new Date().toISOString();
+const LEGACY_NAME_REPLACEMENTS = [
+  ["Martin Proaño", "Franchesco Guzman"],
+  ["Martin Proano", "Franchesco Guzman"],
+  ["martin-proano", "franchesco-guzman"]
+];
 
 export function createDefaultState() {
   return {
@@ -177,7 +182,18 @@ function mergeDefaults(defaultState, savedState) {
 }
 
 export function normalizeState(savedState) {
-  return mergeDefaults(createDefaultState(), savedState);
+  return mergeDefaults(createDefaultState(), migrateLegacyState(savedState));
+}
+
+function migrateLegacyState(savedState) {
+  if (!savedState) return savedState;
+
+  let serialized = JSON.stringify(savedState);
+  for (const [from, to] of LEGACY_NAME_REPLACEMENTS) {
+    serialized = serialized.split(from).join(to);
+  }
+
+  return JSON.parse(serialized);
 }
 
 export function loadState() {

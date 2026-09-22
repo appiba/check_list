@@ -76,7 +76,7 @@ export const CHECKLIST = [
     id: "operacion-staff-puestos",
     area: "Operación",
     title: "Staff completo en puestos",
-    responsable: "Martin Proaño",
+    responsable: "Franchesco Guzman",
     time: "12:40",
     priority: "alta"
   },
@@ -84,7 +84,7 @@ export const CHECKLIST = [
     id: "operacion-inspeccion-montaje",
     area: "Operación",
     title: "Inspección de montaje y correcciones",
-    responsable: "Martin Proaño",
+    responsable: "Franchesco Guzman",
     time: "12:00",
     priority: "alta"
   },
@@ -92,7 +92,7 @@ export const CHECKLIST = [
     id: "operacion-revision-final",
     area: "Operación",
     title: "Revisión final de todas las áreas",
-    responsable: "Martin Proaño",
+    responsable: "Franchesco Guzman",
     time: "16:30",
     priority: "crítica"
   },
@@ -228,7 +228,7 @@ export const CHECKLIST = [
     id: "montaje-10-carpas",
     area: "Montaje",
     title: "10 carpas instaladas",
-    responsable: "Martin Proaño",
+    responsable: "Franchesco Guzman",
     time: "11:30",
     priority: "alta"
   },
@@ -236,7 +236,7 @@ export const CHECKLIST = [
     id: "montaje-120-vallas",
     area: "Montaje",
     title: "120 metros de vallas instaladas",
-    responsable: "Martin Proaño",
+    responsable: "Franchesco Guzman",
     time: "11:30",
     priority: "alta"
   },
@@ -244,7 +244,7 @@ export const CHECKLIST = [
     id: "montaje-vallas-fijadas",
     area: "Montaje",
     title: "Vallas fijadas",
-    responsable: "Martin Proaño",
+    responsable: "Franchesco Guzman",
     time: "12:00",
     priority: "alta"
   },
@@ -252,7 +252,7 @@ export const CHECKLIST = [
     id: "montaje-ruta-vehicular",
     area: "Montaje",
     title: "Ruta vehicular libre",
-    responsable: "Martin Proaño",
+    responsable: "Franchesco Guzman",
     time: "12:00",
     priority: "crítica"
   },
@@ -260,7 +260,7 @@ export const CHECKLIST = [
     id: "montaje-ruta-peatonal",
     area: "Montaje",
     title: "Ruta peatonal libre",
-    responsable: "Martin Proaño",
+    responsable: "Franchesco Guzman",
     time: "12:00",
     priority: "alta"
   },
@@ -268,7 +268,7 @@ export const CHECKLIST = [
     id: "montaje-carril-vip",
     area: "Montaje",
     title: "Carril VIP libre",
-    responsable: "Martin Proaño",
+    responsable: "Franchesco Guzman",
     time: "12:00",
     priority: "alta"
   },
@@ -444,7 +444,7 @@ export const CHECKLIST = [
     id: "cierre-formacion-caravana",
     area: "Cierre",
     title: "Formación para caravana",
-    responsable: "Martin Proaño",
+    responsable: "Franchesco Guzman",
     time: "19:25",
     priority: "alta"
   },
@@ -757,8 +757,8 @@ export const TEAM = [
     ]
   },
   {
-    id: "martin-proano",
-    name: "Martin Proaño",
+    id: "franchesco-guzman",
+    name: "Franchesco Guzman",
     role: "Subdirector Operativo",
     status: "CONFIRMADO",
     functions: [
@@ -867,8 +867,8 @@ export const MAP_ZONES = [
   ["tarima", "TARIMA", "Oskar Baez / DJ Fire"],
   ["zona-fest-derecha", "ZONA FEST DERECHA", "Martin Gomezjurado"],
   ["zona-fest-izquierda", "ZONA FEST IZQUIERDA", "Martin Gomezjurado"],
-  ["carril-vip", "CARRIL VIP", "Martin Proaño"],
-  ["carpas-publico", "CARPAS PÚBLICO", "Martin Proaño"],
+  ["carril-vip", "CARRIL VIP", "Franchesco Guzman"],
+  ["carpas-publico", "CARPAS PÚBLICO", "Franchesco Guzman"],
   ["pre-grid", "PRE-GRID", "Coordinador vehicular"],
   ["ingreso-vehiculos", "INGRESO VEHÍCULOS", "Coordinador vehicular"],
   ["salida-vehiculos", "SALIDA VEHÍCULOS", "Coordinador vehicular"],
