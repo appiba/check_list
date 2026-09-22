@@ -11,6 +11,7 @@ import {
 } from "./data.js";
 
 export const STORAGE_KEY = "expo12h-control-center-v1";
+export const DEFAULT_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxdWHR_Am0abA0Sa55dNNVmwF0LJ8bsO7TGcnIpYfovvwRLXx0UWrFJMycNfAfKJXi8/exec";
 
 const nowIso = () => new Date().toISOString();
 const LEGACY_NAME_REPLACEMENTS = [
@@ -27,11 +28,11 @@ export function createDefaultState() {
       updatedAt: nowIso()
     },
     sync: {
-      enabled: false,
-      webAppUrl: "",
+      enabled: true,
+      webAppUrl: DEFAULT_WEB_APP_URL,
       spreadsheetId: "1xNuN2tUVGF55T_fiHjZknBhg6pkYxj8Gc-TaJ-jPzps",
-      status: "local",
-      message: "Sin conexión activa",
+      status: "configurado",
+      message: "Sincronización lista con Google Sheets",
       lastPullAt: "",
       lastPushAt: "",
       lastError: ""
@@ -182,7 +183,13 @@ function mergeDefaults(defaultState, savedState) {
 }
 
 export function normalizeState(savedState) {
-  return mergeDefaults(createDefaultState(), migrateLegacyState(savedState));
+  const defaults = createDefaultState();
+  const merged = mergeDefaults(defaults, migrateLegacyState(savedState));
+  if (!merged.sync.webAppUrl) {
+    merged.sync.webAppUrl = defaults.sync.webAppUrl;
+  }
+  merged.sync.enabled = true;
+  return merged;
 }
 
 function migrateLegacyState(savedState) {

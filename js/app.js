@@ -6,7 +6,7 @@ import { renderDashboard } from "./dashboard.js";
 import { EVENT } from "./data.js";
 import { renderIncidents } from "./incidents.js";
 import { renderMap } from "./map.js";
-import { resetState, loadState, normalizeState, saveState, touch } from "./storage.js";
+import { resetState, loadState, normalizeState, saveState, STORAGE_KEY, touch } from "./storage.js";
 import { canSync, pullState, pushState, queueRemoteSave, testConnection } from "./sync.js";
 import { renderTeam } from "./team.js";
 import { renderTimeline } from "./timeline.js";
@@ -392,9 +392,10 @@ async function runSyncPush() {
 async function bootstrapSync() {
   if (!canSync(state)) return;
   try {
+    const hasLocalState = Boolean(localStorage.getItem(STORAGE_KEY));
     setSyncStatus({ status: "sincronizando", message: "Sincronizando al iniciar", lastError: "" }, false);
     const response = await pullState(state.sync.webAppUrl);
-    if (response.state?.meta?.updatedAt && new Date(response.state.meta.updatedAt) > new Date(state.meta.updatedAt)) {
+    if (response.state && (!hasLocalState || new Date(response.state.meta?.updatedAt || 0) > new Date(state.meta.updatedAt))) {
       adoptRemoteState(response.state, "Estado remoto más reciente cargado");
     } else {
       queueRemoteSave(state, {

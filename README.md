@@ -131,6 +131,12 @@ Hoja configurada:
 1xNuN2tUVGF55T_fiHjZknBhg6pkYxj8Gc-TaJ-jPzps
 ```
 
+Web App configurado:
+
+```text
+https://script.google.com/macros/s/AKfycbxdWHR_Am0abA0Sa55dNNVmwF0LJ8bsO7TGcnIpYfovvwRLXx0UWrFJMycNfAfKJXi8/exec
+```
+
 Activación:
 
 1. Abrir el proyecto en Apps Script.
@@ -142,8 +148,8 @@ Activación:
 7. Usar:
    - Ejecutar como: usuario que despliega.
    - Acceso: cualquier usuario con el enlace.
-8. Copiar la URL `/exec` del Web App.
-9. En la app, abrir `CONFIGURACIÓN`, pegar la URL, activar sincronización automática y presionar `Probar conexión`.
+8. Copiar la URL `/exec` del Web App si cambia el despliegue.
+9. En la app, abrir `CONFIGURACIÓN`, verificar la URL, activar sincronización automática y presionar `Probar conexión`.
 10. Presionar `Subir estado local` para poblar las pestañas de Google Sheets.
 
 La escritura desde GitHub Pages usa POST hacia Apps Script y la lectura usa JSONP para evitar problemas de CORS.
