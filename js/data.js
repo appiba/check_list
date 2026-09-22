@@ -121,17 +121,9 @@ export const CHECKLIST = [
     priority: "alta"
   },
   {
-    id: "zona-fest-derecha",
+    id: "zona-fest-montaje-general",
     area: "Zona Fest",
-    title: "Montaje Zona Fest derecha",
-    responsable: "Martin Gomezjurado",
-    time: "15:30",
-    priority: "media"
-  },
-  {
-    id: "zona-fest-izquierda",
-    area: "Zona Fest",
-    title: "Montaje Zona Fest izquierda",
+    title: "Montaje Zona Fest general",
     responsable: "Martin Gomezjurado",
     time: "15:30",
     priority: "media"
@@ -781,7 +773,7 @@ export const TEAM = [
     name: "Martin Gomezjurado",
     role: "Zona Fest",
     status: "CONFIRMADO",
-    functions: ["Zona Fest derecha e izquierda", "Montaje", "Desmontaje", "Mobiliario", "Barras", "Servicio", "Kits", "Invitados"]
+    functions: ["Zona Fest general", "Montaje", "Desmontaje", "Mobiliario", "Barras", "Servicio", "Kits", "Invitados"]
   },
   {
     id: "josue",
@@ -835,8 +827,8 @@ export const STAFF = [
   ["S05", "Apoyo pilotos", "Pre-grid 2"],
   ["S06", "Público derecho", "Vallas y circulación"],
   ["S07", "Público izquierdo", "Vallas y circulación"],
-  ["S08", "Zona Fest derecha", "Operación de zona"],
-  ["S09", "Zona Fest izquierda", "Operación de zona"],
+  ["S08", "Zona Fest", "Operación de zona"],
+  ["S09", "Apoyo Zona Fest", "Operación de zona"],
   ["S10", "Runner general / contingencia", "Apoyo transversal"]
 ].map(([code, role, detail]) => ({
   id: code.toLowerCase(),
@@ -865,8 +857,7 @@ export const MAP_ZONES = [
   ["parqueadero-a", "PARQUEADERO A", "Coordinador vehicular"],
   ["parqueadero-b", "PARQUEADERO B", "Coordinador vehicular"],
   ["tarima", "TARIMA", "Oskar Baez / DJ Fire"],
-  ["zona-fest-derecha", "ZONA FEST DERECHA", "Martin Gomezjurado"],
-  ["zona-fest-izquierda", "ZONA FEST IZQUIERDA", "Martin Gomezjurado"],
+  ["zona-fest", "ZONA FEST", "Martin Gomezjurado"],
   ["carril-vip", "CARRIL VIP", "Franchesco Guzman"],
   ["carpas-publico", "CARPAS PÚBLICO", "Franchesco Guzman"],
   ["pre-grid", "PRE-GRID", "Coordinador vehicular"],
@@ -886,8 +877,7 @@ export const MAP_GRID = {
     "parqueadero-b": "r3-c9",
     tarima: "r5-c5",
     "punto-policia": "r3-c11",
-    "zona-fest-derecha": "r7-c7",
-    "zona-fest-izquierda": "r7-c9",
+    "zona-fest": "r7-c8",
     "carril-vip": "r9-c9",
     "carpas-publico": "r7-c3",
     "pre-grid": "r9-c5",

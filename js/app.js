@@ -3,7 +3,7 @@ import { renderBroadcast } from "./broadcast.js";
 import { renderChecklist } from "./checklist.js";
 import { renderConfig } from "./config.js";
 import { renderDashboard } from "./dashboard.js";
-import { EVENT, MAP_GRID } from "./data.js";
+import { EVENT, MAP_GRID, MAP_ZONES } from "./data.js";
 import { renderIncidents } from "./incidents.js";
 import { renderMap } from "./map.js";
 import { resetState, loadState, normalizeState, saveState, STORAGE_KEY, touch } from "./storage.js";
@@ -288,7 +288,9 @@ function normalizeMapCell(cellId) {
 
 function isMapCellOccupied(targetCellId, zoneId, placementId) {
   const targetCells = occupiedMapCells(targetCellId);
-  return Object.entries(state.map).some(([otherZoneId, record]) => {
+  return getVisibleMapZones().some(({ id: otherZoneId }) => {
+    const record = state.map[otherZoneId];
+    if (!record) return false;
     ensureMapPlacements(otherZoneId);
     return record.placements.some((placement) => {
       if (otherZoneId === zoneId && placement.id === placementId) return false;
@@ -351,6 +353,47 @@ function createMapZone(form) {
   state.ui.selectedMapZone = id;
   state.ui.selectedMapPlacement = `${id}-1`;
   saveAndRender({ remote: true });
+}
+
+function deleteMapZone(zoneId) {
+  const zone = getAllMapZones().find((item) => item.id === zoneId);
+  if (!zone || !state.map?.[zoneId]) return;
+
+  const remainingZones = getVisibleMapZones().filter((item) => item.id !== zoneId);
+  if (!remainingZones.length) {
+    alert("Debe quedar al menos un elemento en el mapa.");
+    return;
+  }
+
+  const confirmed = confirm(`¿Eliminar el elemento ${zone.name}? También se quitarán sus ubicaciones del mapa.`);
+  if (!confirmed) return;
+
+  const isDefaultZone = MAP_ZONES.some((item) => item.id === zoneId);
+  if (isDefaultZone) {
+    state.deletedMapZoneIds = Array.isArray(state.deletedMapZoneIds) ? state.deletedMapZoneIds : [];
+    if (!state.deletedMapZoneIds.includes(zoneId)) {
+      state.deletedMapZoneIds.push(zoneId);
+    }
+  } else {
+    state.customMapZones = (state.customMapZones || []).filter((item) => item.id !== zoneId);
+  }
+
+  delete state.map[zoneId];
+
+  if (state.ui.selectedMapZone === zoneId) {
+    state.ui.selectedMapZone = remainingZones[0].id;
+  }
+  state.ui.selectedMapPlacement = "";
+  saveAndRender({ remote: true });
+}
+
+function getAllMapZones() {
+  return [...MAP_ZONES, ...(state.customMapZones || [])];
+}
+
+function getVisibleMapZones() {
+  const deletedZoneIds = new Set(state.deletedMapZoneIds || []);
+  return getAllMapZones().filter((zone) => !deletedZoneIds.has(zone.id));
 }
 
 function uniqueMapZoneId(name) {
@@ -494,6 +537,10 @@ app.addEventListener("click", (event) => {
   if (action === "set-map-mode") {
     state.ui.mapMode = target.dataset.mode === "pan" ? "pan" : "place";
     saveAndRender({ remote: false });
+  }
+
+  if (action === "delete-map-zone") {
+    deleteMapZone(id);
   }
 
   if (action === "reset-event-data") {

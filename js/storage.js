@@ -20,6 +20,8 @@ const LEGACY_NAME_REPLACEMENTS = [
   ["Martin Proano", "Franchesco Guzman"],
   ["martin-proano", "franchesco-guzman"]
 ];
+const ZONA_FEST_ID = "zona-fest";
+const LEGACY_ZONA_FEST_IDS = ["zona-fest-derecha", "zona-fest-izquierda"];
 
 export function createDefaultState() {
   return {
@@ -135,6 +137,7 @@ export function createDefaultState() {
     ),
     incidents: [],
     customMapZones: [],
+    deletedMapZoneIds: [],
     broadcast: Object.fromEntries(
       BROADCAST.map((item) => [
         item.id,
@@ -213,7 +216,80 @@ function migrateLegacyState(savedState) {
     serialized = serialized.split(from).join(to);
   }
 
-  return JSON.parse(serialized);
+  const migrated = JSON.parse(serialized);
+  migrateZonaFestMap(migrated);
+  return migrated;
+}
+
+function migrateZonaFestMap(state) {
+  if (!isPlainObject(state) || !isPlainObject(state.map)) return;
+
+  const legacyRecords = LEGACY_ZONA_FEST_IDS.map((id) => state.map[id]).filter(isPlainObject);
+  if (!legacyRecords.length) return;
+
+  const existingRecord = isPlainObject(state.map[ZONA_FEST_ID]) ? state.map[ZONA_FEST_ID] : {};
+  const seedRecord = Object.keys(existingRecord).length ? existingRecord : legacyRecords[0];
+  const placements = [];
+  const usedIds = new Set();
+  let requestedQuantity = Number.parseInt(existingRecord.quantity, 10) || 0;
+
+  const addPlacement = (placement, fallbackId) => {
+    const baseId = placement?.id ? String(placement.id).replace(/^zona-fest-(derecha|izquierda)/, ZONA_FEST_ID) : fallbackId;
+    let id = baseId || `${ZONA_FEST_ID}-${placements.length + 1}`;
+    let index = 2;
+    while (usedIds.has(id)) {
+      id = `${baseId || ZONA_FEST_ID}-${index}`;
+      index += 1;
+    }
+    usedIds.add(id);
+    placements.push({
+      id,
+      cellId: placement?.cellId || ""
+    });
+  };
+
+  if (Array.isArray(existingRecord.placements)) {
+    existingRecord.placements.forEach((placement, index) => addPlacement(placement, `${ZONA_FEST_ID}-${index + 1}`));
+  } else if (existingRecord.gridPosition) {
+    addPlacement({ cellId: existingRecord.gridPosition }, `${ZONA_FEST_ID}-1`);
+  }
+
+  legacyRecords.forEach((record, recordIndex) => {
+    const recordPlacements = Array.isArray(record.placements)
+      ? record.placements
+      : record.gridPosition
+        ? [{ cellId: record.gridPosition }]
+        : [];
+    requestedQuantity += Math.max(Number.parseInt(record.quantity, 10) || 0, recordPlacements.length);
+    recordPlacements.forEach((placement, placementIndex) => {
+      addPlacement(placement, `${ZONA_FEST_ID}-${recordIndex + 1}-${placementIndex + 1}`);
+    });
+  });
+
+  const finalQuantity = Math.max(requestedQuantity, placements.length, 1);
+  while (placements.length < finalQuantity) {
+    addPlacement({ cellId: "" }, `${ZONA_FEST_ID}-${placements.length + 1}`);
+  }
+
+  state.map[ZONA_FEST_ID] = {
+    responsable: seedRecord.responsable || "Martin Gomezjurado",
+    status: seedRecord.status || "LISTO",
+    quantity: placements.length,
+    gridPosition: placements.find((placement) => placement.cellId)?.cellId || "",
+    placements,
+    tasks: seedRecord.tasks || "",
+    incident: seedRecord.incident || "",
+    updatedAt: seedRecord.updatedAt || ""
+  };
+
+  for (const id of LEGACY_ZONA_FEST_IDS) {
+    delete state.map[id];
+  }
+
+  if (isPlainObject(state.ui) && LEGACY_ZONA_FEST_IDS.includes(state.ui.selectedMapZone)) {
+    state.ui.selectedMapZone = ZONA_FEST_ID;
+    state.ui.selectedMapPlacement = "";
+  }
 }
 
 export function loadState() {

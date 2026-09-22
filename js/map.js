@@ -5,8 +5,7 @@ const ZONE_TYPES = {
   "parqueadero-a": { className: "vehicle", symbol: "P", label: "Parqueadero" },
   "parqueadero-b": { className: "vehicle", symbol: "P", label: "Parqueadero" },
   tarima: { className: "stage", symbol: "T", label: "Tarima" },
-  "zona-fest-derecha": { className: "fest", symbol: "ZF", label: "Zona Fest" },
-  "zona-fest-izquierda": { className: "fest", symbol: "ZF", label: "Zona Fest" },
+  "zona-fest": { className: "fest", symbol: "ZF", label: "Zona Fest" },
   "carril-vip": { className: "vip", symbol: "VIP", label: "VIP" },
   "carpas-publico": { className: "tent", symbol: "C", label: "Carpas" },
   "pre-grid": { className: "grid", symbol: "G", label: "Pre-grid" },
@@ -101,6 +100,7 @@ export function renderMap(state) {
               <option value="police">Policía</option>
             </select>
             <button type="submit">Crear</button>
+            <button class="map-delete-selected-btn" type="button" data-action="delete-map-zone" data-id="${escapeHtml(selectedZone.id)}">Eliminar seleccionado</button>
           </form>
           ${mapZones.map((zone) => buildZoneCard(state, zone, selectedZone.id, selectedPlacementId)).join("")}
         </div>
@@ -115,6 +115,7 @@ export function renderMap(state) {
         <div class="map-detail-actions">
           <span>${escapeHtml(zoneType(selectedZone).label)} · ${placedSelected}/${selectedPlacements.length} colocados${selectedPlacedLabel ? ` · seleccionado ${escapeHtml(cellLabelFromId(selectedPlacedLabel))}` : ""}</span>
           <button class="mini-action" type="button" data-action="remove-map-zone" data-id="${escapeHtml(selectedZone.id)}" data-placement-id="${escapeHtml(selectedPlacementId)}">Quitar seleccionado del mapa</button>
+          <button class="mini-action danger" type="button" data-action="delete-map-zone" data-id="${escapeHtml(selectedZone.id)}">Eliminar elemento</button>
         </div>
         <div class="task-fields compact-fields">
           <label>
@@ -270,7 +271,8 @@ function zoneQuantity(state, zoneId) {
 }
 
 function getMapZones(state) {
-  return [...MAP_ZONES, ...(state.customMapZones || [])];
+  const deletedZoneIds = new Set(state.deletedMapZoneIds || []);
+  return [...MAP_ZONES, ...(state.customMapZones || [])].filter((zone) => !deletedZoneIds.has(zone.id));
 }
 
 function zoneType(zone) {

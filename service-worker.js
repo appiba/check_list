@@ -1,4 +1,4 @@
-const CACHE_NAME = "expo12h-control-center-v12";
+const CACHE_NAME = "expo12h-control-center-v13";
 const APP_ASSETS = [
   "./",
   "./index.html",

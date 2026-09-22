@@ -1025,7 +1025,7 @@ textarea {
 .map-create-form {
   grid-column: 1 / -1;
   display: grid;
-  grid-template-columns: minmax(160px, 1.2fr) minmax(120px, 0.8fr) 92px;
+  grid-template-columns: minmax(140px, 1.1fr) minmax(110px, 0.75fr) 88px minmax(128px, 0.9fr);
   align-items: end;
   gap: 8px;
   padding: 10px;
@@ -1049,6 +1049,12 @@ textarea {
   color: #05070a;
   background: var(--gold);
   font-weight: 950;
+}
+
+.map-create-form .map-delete-selected-btn {
+  border-color: rgba(255, 77, 79, 0.48);
+  color: var(--red);
+  background: var(--red-soft);
 }
 
 @media (max-width: 559px) {
