@@ -18,7 +18,6 @@ let state = loadState();
 let searchRenderTimer;
 let bottomNavScrollLeft = 0;
 let centerActiveNavOnRender = true;
-let mapDrag = null;
 let mapPan = null;
 let suppressNextClick = false;
 
@@ -172,7 +171,11 @@ function moveMapZone(zoneId, targetCellId, placementId = "") {
   const placement = getMapPlacementForMove(zoneId, placementId);
   if (!placement) return;
 
-  clearMapCollisions(zoneId, placement.id, normalizedCellId);
+  if (isMapCellOccupied(normalizedCellId, zoneId, placement.id)) {
+    state.ui.selectedMapZone = zoneId;
+    saveAndRender({ remote: false });
+    return;
+  }
 
   placement.cellId = normalizedCellId;
   state.map[zoneId].gridPosition = normalizedCellId;
@@ -246,7 +249,8 @@ function getMapPlacementForMove(zoneId, placementId) {
   if (existing) return existing;
   const unplaced = placements.find((placement) => !placement.cellId);
   if (unplaced) return unplaced;
-  const placement = { id: `${zoneId}-${Date.now()}-${placements.length + 1}`, cellId: "" };
+  if (placements.length) return placements[placements.length - 1];
+  const placement = { id: `${zoneId}-${Date.now()}-1`, cellId: "" };
   placements.push(placement);
   state.map[zoneId].quantity = placements.length;
   return placement;
@@ -260,19 +264,13 @@ function normalizeMapCell(cellId) {
   return `r${row}-c${column}`;
 }
 
-function clearMapCollisions(zoneId, placementId, targetCellId) {
+function isMapCellOccupied(targetCellId, zoneId, placementId) {
   const targetCells = occupiedMapCells(targetCellId);
-  Object.entries(state.map).forEach(([otherZoneId, record]) => {
+  return Object.entries(state.map).some(([otherZoneId, record]) => {
     ensureMapPlacements(otherZoneId);
-    record.placements.forEach((placement) => {
-      if (otherZoneId === zoneId && placement.id === placementId) return;
-      if (!placement.cellId) return;
-      const hasCollision = occupiedMapCells(placement.cellId).some((cell) => targetCells.includes(cell));
-      if (hasCollision) {
-        placement.cellId = "";
-        record.gridPosition = record.placements.find((item) => item.cellId)?.cellId || "";
-        touch(record);
-      }
+    return record.placements.some((placement) => {
+      if (otherZoneId === zoneId && placement.id === placementId) return false;
+      return placement.cellId && occupiedMapCells(placement.cellId).some((cell) => targetCells.includes(cell));
     });
   });
 }
@@ -282,12 +280,13 @@ function occupiedMapCells(cellId) {
   if (!match) return [];
   const row = Number(match[1]);
   const column = Number(match[2]);
-  return [
-    `r${row}-c${column}`,
-    `r${row}-c${column + 1}`,
-    `r${row + 1}-c${column}`,
-    `r${row + 1}-c${column + 1}`
-  ];
+  const cells = [];
+  for (let rowOffset = 0; rowOffset < MAP_GRID.itemSpan; rowOffset += 1) {
+    for (let columnOffset = 0; columnOffset < MAP_GRID.itemSpan; columnOffset += 1) {
+      cells.push(`r${row + rowOffset}-c${column + columnOffset}`);
+    }
+  }
+  return cells;
 }
 
 function adjustMapZoom(delta) {
@@ -302,28 +301,6 @@ function toggleRecord(collection, id, field, checked) {
 
 function currentTime() {
   return new Date().toTimeString().slice(0, 5);
-}
-
-function createMapDragGhost(source) {
-  const ghost = document.createElement("div");
-  ghost.className = "map-drag-ghost";
-  ghost.textContent = source.querySelector("strong")?.textContent || source.textContent.trim();
-  document.body.appendChild(ghost);
-  return ghost;
-}
-
-function moveMapDragGhost(x, y) {
-  if (!mapDrag?.ghost) return;
-  mapDrag.ghost.style.transform = `translate(${x + 12}px, ${y + 12}px)`;
-}
-
-function updateMapDropTarget(x, y) {
-  const elements = document.elementsFromPoint ? document.elementsFromPoint(x, y) : [document.elementFromPoint(x, y)];
-  const targetCell = elements.map((element) => element?.closest?.("[data-map-cell]")).find(Boolean);
-  if (targetCell === mapDrag.targetCell) return;
-  mapDrag.targetCell?.classList.remove("drop-target");
-  mapDrag.targetCell = targetCell;
-  mapDrag.targetCell?.classList.add("drop-target");
 }
 
 function moveMapViewport(event) {
@@ -368,35 +345,6 @@ function cancelMapPan(event) {
 function cleanupMapPan() {
   mapPan?.viewport.classList.remove("panning");
   mapPan = null;
-}
-
-function finishMapDrag(event) {
-  if (!mapDrag || event.pointerId !== mapDrag.pointerId) return;
-  const { dragging, targetCell, zoneId, placementId } = mapDrag;
-  cleanupMapDrag();
-
-  if (dragging) {
-    suppressNextClick = true;
-    window.setTimeout(() => {
-      suppressNextClick = false;
-    }, 350);
-  }
-
-  if (dragging && targetCell?.dataset.mapCell) {
-    moveMapZone(zoneId, targetCell.dataset.mapCell, placementId);
-  }
-}
-
-function cancelMapDrag(event) {
-  if (!mapDrag || event.pointerId !== mapDrag.pointerId) return;
-  cleanupMapDrag();
-}
-
-function cleanupMapDrag() {
-  mapDrag?.targetCell?.classList.remove("drop-target");
-  mapDrag?.source?.classList.remove("drag-source");
-  mapDrag?.ghost?.remove();
-  mapDrag = null;
 }
 
 app.addEventListener("click", (event) => {
@@ -495,23 +443,6 @@ app.addEventListener("scroll", (event) => {
 }, true);
 
 app.addEventListener("pointerdown", (event) => {
-  const dragSource = event.target.closest("[data-map-draggable]");
-  if (dragSource && event.button === 0) {
-    mapDrag = {
-      pointerId: event.pointerId,
-      zoneId: dragSource.dataset.id,
-      placementId: dragSource.dataset.placementId || "",
-      source: dragSource,
-      startX: event.clientX,
-      startY: event.clientY,
-      dragging: false,
-      ghost: null,
-      targetCell: null
-    };
-    dragSource.setPointerCapture?.(event.pointerId);
-    return;
-  }
-
   const viewport = event.target.closest("[data-map-viewport]");
   if (!viewport || event.button !== 0) return;
 
@@ -528,27 +459,11 @@ app.addEventListener("pointerdown", (event) => {
 });
 
 app.addEventListener("pointermove", (event) => {
-  if (moveMapViewport(event)) return;
-  if (!mapDrag || event.pointerId !== mapDrag.pointerId) return;
-
-  const distance = Math.hypot(event.clientX - mapDrag.startX, event.clientY - mapDrag.startY);
-  if (!mapDrag.dragging && distance < 8) return;
-
-  if (!mapDrag.dragging) {
-    mapDrag.dragging = true;
-    mapDrag.ghost = createMapDragGhost(mapDrag.source);
-    mapDrag.source.classList.add("drag-source");
-  }
-
-  event.preventDefault();
-  moveMapDragGhost(event.clientX, event.clientY);
-  updateMapDropTarget(event.clientX, event.clientY);
+  moveMapViewport(event);
 });
 
 app.addEventListener("pointerup", finishMapPan);
-app.addEventListener("pointerup", finishMapDrag);
 app.addEventListener("pointercancel", cancelMapPan);
-app.addEventListener("pointercancel", cancelMapDrag);
 
 app.addEventListener("input", (event) => {
   const target = event.target;

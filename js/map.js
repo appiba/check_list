@@ -45,7 +45,7 @@ export function renderMap(state) {
           <div class="panel-header map-board-header">
             <div>
               <span class="section-kicker">Cuadrícula operativa</span>
-              <p class="map-help">Cada elemento ocupa 1 cuadro. Con zoom, arrastra el fondo para mover la foto.</p>
+              <p class="map-help">Selecciona un elemento y toca un cuadro. Usa - para quitar del mapa.</p>
             </div>
             <div class="map-zoom-controls" aria-label="Zoom del mapa">
               <button type="button" data-action="adjust-map-zoom" data-delta="-0.15">-</button>
@@ -60,7 +60,7 @@ export function renderMap(state) {
               ${placements.map((placement) => buildPlacedItem(state, placement, selectedZone.id)).join("")}
             </div>
           </div>
-          <p class="map-instruction">Toca un cuadro para colocar el elemento seleccionado. Usa + para crear más elementos y arrastra el fondo para panear.</p>
+          <p class="map-instruction">Toca un cuadro vacío para colocar el elemento seleccionado. Usa + para crear más, - para quitar, y arrastra el fondo para panear.</p>
         </div>
 
         <div class="map-zone-grid map-zone-list" aria-label="Elementos del mapa">
@@ -177,7 +177,6 @@ function buildPlacedItem(state, placement, selectedZoneId) {
       data-action="select-map-zone"
       data-id="${escapeHtml(zone.id)}"
       data-placement-id="${escapeHtml(placement.id)}"
-      data-map-draggable="true"
       style="grid-column: ${position.column + 1} / span ${MAP_GRID.itemSpan}; grid-row: ${position.row + 1} / span ${MAP_GRID.itemSpan};"
     >
       <span class="map-symbol">${escapeHtml(type.symbol)}</span>
@@ -193,13 +192,14 @@ function buildZoneCard(state, zone, selectedZoneId) {
   const placed = placements.filter((placement) => placement.cellId).length;
   return `
     <div class="zone-button map-zone-card type-${type.className} ${zone.id === selectedZoneId ? "active" : ""}">
-      <button class="map-zone-main" type="button" data-action="select-map-zone" data-id="${escapeHtml(zone.id)}" data-map-draggable="true">
+      <button class="map-zone-main" type="button" data-action="select-map-zone" data-id="${escapeHtml(zone.id)}">
         <span class="map-symbol">${escapeHtml(type.symbol)}</span>
         <span>
           <strong>${escapeHtml(zone.name)}</strong>
           <em>${placed}/${placements.length} colocados</em>
         </span>
       </button>
+      <button class="map-remove-btn" type="button" data-action="remove-map-zone" data-id="${escapeHtml(zone.id)}" aria-label="Quitar ${escapeHtml(zone.name)} del mapa">-</button>
       <button class="map-add-btn" type="button" data-action="adjust-map-quantity" data-id="${escapeHtml(zone.id)}" data-delta="1" aria-label="Agregar ${escapeHtml(zone.name)}">+</button>
     </div>
   `;

@@ -980,11 +980,11 @@ textarea {
 }
 
 .map-zone-card {
-  grid-template-columns: 1fr 38px;
+  grid-template-columns: 1fr 36px 36px;
   align-items: stretch;
   padding: 0;
   overflow: hidden;
-  touch-action: none;
+  touch-action: manipulation;
   user-select: none;
 }
 
@@ -1000,11 +1000,6 @@ textarea {
   background: transparent;
   text-align: left;
   padding: 10px;
-}
-
-.map-zone-card.drag-source,
-.map-placed-zone.drag-source {
-  opacity: 0.36;
 }
 
 .map-zone-main span:last-child {
@@ -1026,34 +1021,23 @@ textarea {
   font-weight: 800;
 }
 
-.map-add-btn {
-  min-width: 38px;
+.map-add-btn,
+.map-remove-btn {
+  min-width: 36px;
   border: 0;
   border-left: 1px solid rgba(255, 255, 255, 0.08);
-  color: var(--zone-color, var(--gold));
   background: rgba(255, 255, 255, 0.035);
   font-size: 1rem;
   font-weight: 950;
 }
 
-.map-drag-ghost {
-  position: fixed;
-  z-index: 9999;
-  width: 128px;
-  min-height: 58px;
-  display: grid;
-  place-items: center;
-  padding: 9px;
-  border: 1px solid rgba(242, 201, 76, 0.78);
-  border-radius: var(--radius);
-  color: var(--gold);
-  background: rgba(5, 7, 10, 0.94);
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
-  font-size: 0.7rem;
-  font-weight: 950;
-  text-align: center;
-  text-transform: uppercase;
-  pointer-events: none;
+.map-add-btn {
+  color: var(--zone-color, var(--gold));
+}
+
+.map-remove-btn {
+  color: var(--red);
+  background: rgba(255, 77, 79, 0.08);
 }
 
 .type-security { --zone-color: #4aa3ff; }
