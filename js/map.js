@@ -17,8 +17,19 @@ const ZONE_TYPES = {
   "seguridad-b": { className: "security", symbol: "S", label: "Seguridad" }
 };
 
+const CUSTOM_ZONE_TYPES = {
+  security: { className: "security", symbol: "S", label: "Seguridad" },
+  tent: { className: "tent", symbol: "C", label: "Carpas" },
+  stage: { className: "stage", symbol: "T", label: "Tarima" },
+  vehicle: { className: "vehicle", symbol: "P", label: "Vehículos" },
+  fest: { className: "fest", symbol: "ZF", label: "Zona" },
+  police: { className: "police", symbol: "POL", label: "Policía" },
+  default: { className: "default", symbol: "E", label: "Elemento" }
+};
+
 export function renderMap(state) {
-  const selectedZone = MAP_ZONES.find((zone) => zone.id === state.ui.selectedMapZone) || MAP_ZONES[0];
+  const mapZones = getMapZones(state);
+  const selectedZone = mapZones.find((zone) => zone.id === state.ui.selectedMapZone) || mapZones[0];
   const selectedRecord = state.map[selectedZone.id];
   const placements = getAllPlacements(state);
   const selectedPlacements = getZonePlacements(state, selectedZone.id);
@@ -68,7 +79,21 @@ export function renderMap(state) {
             <span class="section-kicker">Elementos</span>
             <span>${placedCount(state)} colocados</span>
           </div>
-          ${MAP_ZONES.map((zone) => buildZoneCard(state, zone, selectedZone.id)).join("")}
+          <form class="map-create-form" data-action="create-map-zone">
+            <span class="section-kicker">Crear elemento</span>
+            <input type="text" name="name" placeholder="Nombre del elemento" maxlength="32" required>
+            <select name="type" aria-label="Tipo de elemento">
+              <option value="default">Elemento</option>
+              <option value="security">Seguridad</option>
+              <option value="tent">Carpa</option>
+              <option value="stage">Tarima</option>
+              <option value="vehicle">Vehículos</option>
+              <option value="fest">Zona</option>
+              <option value="police">Policía</option>
+            </select>
+            <button type="submit">Crear</button>
+          </form>
+          ${mapZones.map((zone) => buildZoneCard(state, zone, selectedZone.id)).join("")}
         </div>
       </article>
 
@@ -79,7 +104,7 @@ export function renderMap(state) {
         </div>
         <h3>${escapeHtml(selectedZone.name)}</h3>
         <div class="map-detail-actions">
-          <span>${escapeHtml(zoneType(selectedZone.id).label)} · ${placedSelected}/${selectedPlacements.length} colocados</span>
+          <span>${escapeHtml(zoneType(selectedZone).label)} · ${placedSelected}/${selectedPlacements.length} colocados</span>
           <button class="mini-action" type="button" data-action="remove-map-zone" data-id="${escapeHtml(selectedZone.id)}">Quitar último del mapa</button>
         </div>
         <div class="task-fields compact-fields">
@@ -163,10 +188,10 @@ function buildMapCells() {
 }
 
 function buildPlacedItem(state, placement, selectedZoneId) {
-  const zone = MAP_ZONES.find((item) => item.id === placement.zoneId);
+  const zone = getMapZones(state).find((item) => item.id === placement.zoneId);
   if (!zone || !placement.cellId) return "";
   const record = state.map[zone.id];
-  const type = zoneType(zone.id);
+  const type = zoneType(zone);
   const position = parseCell(placement.cellId);
   return `
     <button
@@ -187,7 +212,7 @@ function buildPlacedItem(state, placement, selectedZoneId) {
 }
 
 function buildZoneCard(state, zone, selectedZoneId) {
-  const type = zoneType(zone.id);
+  const type = zoneType(zone);
   const placements = getZonePlacements(state, zone.id);
   const placed = placements.filter((placement) => placement.cellId).length;
   return `
@@ -206,7 +231,7 @@ function buildZoneCard(state, zone, selectedZoneId) {
 }
 
 function getAllPlacements(state) {
-  return MAP_ZONES.flatMap((zone) =>
+  return getMapZones(state).flatMap((zone) =>
     getZonePlacements(state, zone.id).map((placement) => ({
       ...placement,
       zoneId: zone.id
@@ -233,8 +258,15 @@ function zoneQuantity(state, zoneId) {
   return String(getZonePlacements(state, zoneId).length);
 }
 
-function zoneType(zoneId) {
-  return ZONE_TYPES[zoneId] || { className: "default", symbol: "Z", label: "Zona" };
+function getMapZones(state) {
+  return [...MAP_ZONES, ...(state.customMapZones || [])];
+}
+
+function zoneType(zone) {
+  if (zone.type) {
+    return CUSTOM_ZONE_TYPES[zone.type] || CUSTOM_ZONE_TYPES.default;
+  }
+  return ZONE_TYPES[zone.id] || CUSTOM_ZONE_TYPES.default;
 }
 
 function parseCell(cellId) {

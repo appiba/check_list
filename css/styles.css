@@ -979,6 +979,41 @@ textarea {
   gap: 10px;
 }
 
+.map-create-form {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(160px, 1.2fr) minmax(120px, 0.8fr) 92px;
+  align-items: end;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid rgba(242, 201, 76, 0.26);
+  border-radius: var(--radius);
+  background: rgba(242, 201, 76, 0.08);
+}
+
+.map-create-form .section-kicker {
+  grid-column: 1 / -1;
+}
+
+.map-create-form input,
+.map-create-form select,
+.map-create-form button {
+  min-height: 38px;
+}
+
+.map-create-form button {
+  border-color: rgba(242, 201, 76, 0.58);
+  color: #05070a;
+  background: var(--gold);
+  font-weight: 950;
+}
+
+@media (max-width: 559px) {
+  .map-create-form {
+    grid-template-columns: 1fr;
+  }
+}
+
 .map-zone-card {
   grid-template-columns: 1fr 36px 36px;
   align-items: stretch;

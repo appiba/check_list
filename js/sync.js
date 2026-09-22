@@ -35,7 +35,7 @@ export function buildSyncPayload(state) {
       activations: ACTIVATIONS,
       broadcast: BROADCAST,
       checklist: CHECKLIST,
-      mapZones: MAP_ZONES,
+      mapZones: [...MAP_ZONES, ...(state.customMapZones || [])],
       staff: STAFF,
       team: TEAM,
       timeline: TIMELINE,

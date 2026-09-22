@@ -132,6 +132,7 @@ export function createDefaultState() {
       ])
     ),
     incidents: [],
+    customMapZones: [],
     broadcast: Object.fromEntries(
       BROADCAST.map((item) => [
         item.id,

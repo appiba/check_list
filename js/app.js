@@ -295,6 +295,61 @@ function adjustMapZoom(delta) {
   saveAndRender({ remote: false });
 }
 
+function createMapZone(form) {
+  const formData = new FormData(form);
+  const name = getFormValue(formData, "name").trim().toUpperCase();
+  if (!name) return;
+
+  const id = uniqueMapZoneId(name);
+  const type = getFormValue(formData, "type", "default");
+  const now = new Date().toISOString();
+
+  state.customMapZones = Array.isArray(state.customMapZones) ? state.customMapZones : [];
+  state.customMapZones.push({
+    id,
+    name,
+    responsable: "Operación",
+    type
+  });
+  state.map[id] = {
+    responsable: "Operación",
+    status: "LISTO",
+    quantity: 1,
+    gridPosition: "",
+    placements: [
+      {
+        id: `${id}-1`,
+        cellId: ""
+      }
+    ],
+    tasks: "",
+    incident: "",
+    updatedAt: now
+  };
+  state.ui.selectedMapZone = id;
+  saveAndRender({ remote: true });
+}
+
+function uniqueMapZoneId(name) {
+  const base = `custom-${slugify(name) || "elemento"}`;
+  let candidate = base;
+  let index = 2;
+  while (state.map?.[candidate]) {
+    candidate = `${base}-${index}`;
+    index += 1;
+  }
+  return candidate;
+}
+
+function slugify(value) {
+  return String(value)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 function toggleRecord(collection, id, field, checked) {
   updateRecord(collection, id, field, checked);
 }
@@ -443,6 +498,8 @@ app.addEventListener("scroll", (event) => {
 }, true);
 
 app.addEventListener("pointerdown", (event) => {
+  if (event.target.closest("[data-map-cell], .map-placed-zone")) return;
+
   const viewport = event.target.closest("[data-map-viewport]");
   if (!viewport || event.button !== 0) return;
 
@@ -578,6 +635,12 @@ app.addEventListener("change", (event) => {
 
 app.addEventListener("submit", (event) => {
   const form = event.target;
+  if (form.dataset.action === "create-map-zone") {
+    event.preventDefault();
+    createMapZone(form);
+    return;
+  }
+
   if (form.dataset.action !== "create-incident") return;
   event.preventDefault();
 
