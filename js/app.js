@@ -19,6 +19,7 @@ let searchRenderTimer;
 let bottomNavScrollLeft = 0;
 let centerActiveNavOnRender = true;
 let mapDrag = null;
+let mapPan = null;
 let suppressNextClick = false;
 
 const NAV_ITEMS = [
@@ -94,6 +95,7 @@ function render() {
     </nav>
   `;
   syncBottomNavPosition({ center: centerActiveNavOnRender });
+  syncMapViewport();
   centerActiveNavOnRender = false;
 }
 
@@ -125,6 +127,15 @@ function syncBottomNavPosition({ center = false } = {}) {
       const targetLeft = activeButton.offsetLeft - (nav.clientWidth - activeButton.offsetWidth) / 2;
       nav.scrollTo({ left: Math.max(0, targetLeft), behavior: center ? "smooth" : "auto" });
     }
+  });
+}
+
+function syncMapViewport() {
+  window.requestAnimationFrame(() => {
+    const viewport = app.querySelector("[data-map-viewport]");
+    if (!viewport) return;
+    viewport.scrollLeft = state.ui.mapScrollLeft || 0;
+    viewport.scrollTop = state.ui.mapScrollTop || 0;
   });
 }
 
@@ -315,6 +326,50 @@ function updateMapDropTarget(x, y) {
   mapDrag.targetCell?.classList.add("drop-target");
 }
 
+function moveMapViewport(event) {
+  if (!mapPan || event.pointerId !== mapPan.pointerId) return false;
+
+  const deltaX = event.clientX - mapPan.startX;
+  const deltaY = event.clientY - mapPan.startY;
+  const distance = Math.hypot(deltaX, deltaY);
+  if (!mapPan.dragging && distance < 6) return true;
+
+  if (!mapPan.dragging) {
+    mapPan.dragging = true;
+    mapPan.viewport.classList.add("panning");
+  }
+
+  event.preventDefault();
+  mapPan.viewport.scrollLeft = mapPan.scrollLeft - deltaX;
+  mapPan.viewport.scrollTop = mapPan.scrollTop - deltaY;
+  state.ui.mapScrollLeft = mapPan.viewport.scrollLeft;
+  state.ui.mapScrollTop = mapPan.viewport.scrollTop;
+  return true;
+}
+
+function finishMapPan(event) {
+  if (!mapPan || event.pointerId !== mapPan.pointerId) return;
+  const { dragging } = mapPan;
+  cleanupMapPan();
+
+  if (dragging) {
+    suppressNextClick = true;
+    window.setTimeout(() => {
+      suppressNextClick = false;
+    }, 350);
+  }
+}
+
+function cancelMapPan(event) {
+  if (!mapPan || event.pointerId !== mapPan.pointerId) return;
+  cleanupMapPan();
+}
+
+function cleanupMapPan() {
+  mapPan?.viewport.classList.remove("panning");
+  mapPan = null;
+}
+
 function finishMapDrag(event) {
   if (!mapDrag || event.pointerId !== mapDrag.pointerId) return;
   const { dragging, targetCell, zoneId, placementId } = mapDrag;
@@ -433,27 +488,47 @@ app.addEventListener("scroll", (event) => {
   if (event.target instanceof HTMLElement && event.target.classList.contains("bottom-nav")) {
     bottomNavScrollLeft = event.target.scrollLeft;
   }
+  if (event.target instanceof HTMLElement && event.target.dataset.mapViewport) {
+    state.ui.mapScrollLeft = event.target.scrollLeft;
+    state.ui.mapScrollTop = event.target.scrollTop;
+  }
 }, true);
 
 app.addEventListener("pointerdown", (event) => {
   const dragSource = event.target.closest("[data-map-draggable]");
-  if (!dragSource || event.button !== 0) return;
+  if (dragSource && event.button === 0) {
+    mapDrag = {
+      pointerId: event.pointerId,
+      zoneId: dragSource.dataset.id,
+      placementId: dragSource.dataset.placementId || "",
+      source: dragSource,
+      startX: event.clientX,
+      startY: event.clientY,
+      dragging: false,
+      ghost: null,
+      targetCell: null
+    };
+    dragSource.setPointerCapture?.(event.pointerId);
+    return;
+  }
 
-  mapDrag = {
+  const viewport = event.target.closest("[data-map-viewport]");
+  if (!viewport || event.button !== 0) return;
+
+  mapPan = {
     pointerId: event.pointerId,
-    zoneId: dragSource.dataset.id,
-    placementId: dragSource.dataset.placementId || "",
-    source: dragSource,
+    viewport,
     startX: event.clientX,
     startY: event.clientY,
-    dragging: false,
-    ghost: null,
-    targetCell: null
+    scrollLeft: viewport.scrollLeft,
+    scrollTop: viewport.scrollTop,
+    dragging: false
   };
-  dragSource.setPointerCapture?.(event.pointerId);
+  viewport.setPointerCapture?.(event.pointerId);
 });
 
 app.addEventListener("pointermove", (event) => {
+  if (moveMapViewport(event)) return;
   if (!mapDrag || event.pointerId !== mapDrag.pointerId) return;
 
   const distance = Math.hypot(event.clientX - mapDrag.startX, event.clientY - mapDrag.startY);
@@ -470,7 +545,9 @@ app.addEventListener("pointermove", (event) => {
   updateMapDropTarget(event.clientX, event.clientY);
 });
 
+app.addEventListener("pointerup", finishMapPan);
 app.addEventListener("pointerup", finishMapDrag);
+app.addEventListener("pointercancel", cancelMapPan);
 app.addEventListener("pointercancel", cancelMapDrag);
 
 app.addEventListener("input", (event) => {

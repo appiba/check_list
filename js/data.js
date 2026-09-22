@@ -880,7 +880,7 @@ export const MAP_ZONES = [
 export const MAP_GRID = {
   columns: 12,
   rows: 12,
-  itemSpan: 2,
+  itemSpan: 1,
   positions: {
     "parqueadero-a": "r1-c9",
     "parqueadero-b": "r3-c9",

@@ -45,7 +45,7 @@ export function renderMap(state) {
           <div class="panel-header map-board-header">
             <div>
               <span class="section-kicker">Cuadrícula operativa</span>
-              <p class="map-help">Cada elemento ocupa 4 cuadros. Arrastra con el dedo para mover.</p>
+              <p class="map-help">Cada elemento ocupa 1 cuadro. Con zoom, arrastra el fondo para mover la foto.</p>
             </div>
             <div class="map-zoom-controls" aria-label="Zoom del mapa">
               <button type="button" data-action="adjust-map-zoom" data-delta="-0.15">-</button>
@@ -53,11 +53,14 @@ export function renderMap(state) {
               <button type="button" data-action="adjust-map-zoom" data-delta="0.15">+</button>
             </div>
           </div>
-          <div class="event-map-grid" style="--map-cols: ${MAP_GRID.columns}; --map-rows: ${MAP_GRID.rows}; --map-zoom: ${mapZoom};" aria-label="Cuadrícula editable del evento">
-            ${buildMapCells()}
-            ${placements.map((placement) => buildPlacedItem(state, placement, selectedZone.id)).join("")}
+          <div class="map-viewport" data-map-viewport="true" aria-label="Vista desplazable del mapa">
+            <div class="event-map-grid" style="--map-cols: ${MAP_GRID.columns}; --map-rows: ${MAP_GRID.rows}; --map-zoom: ${mapZoom};" aria-label="Cuadrícula editable del evento">
+              ${buildMapAxes()}
+              ${buildMapCells()}
+              ${placements.map((placement) => buildPlacedItem(state, placement, selectedZone.id)).join("")}
+            </div>
           </div>
-          <p class="map-instruction">Toca un cuadro vacío para colocar el elemento seleccionado. Usa + para crear más elementos y luego colócalos en el mapa.</p>
+          <p class="map-instruction">Toca un cuadro para colocar el elemento seleccionado. Usa + para crear más elementos y arrastra el fondo para panear.</p>
         </div>
 
         <div class="map-zone-grid map-zone-list" aria-label="Elementos del mapa">
@@ -133,13 +136,24 @@ export function renderMap(state) {
   `;
 }
 
+function buildMapAxes() {
+  const axes = ['<span class="map-axis map-axis-corner" aria-hidden="true"></span>'];
+  for (let column = 1; column <= MAP_GRID.columns; column += 1) {
+    axes.push(`<span class="map-axis map-axis-column" style="grid-column: ${column + 1}; grid-row: 1;">${column}</span>`);
+  }
+  for (let row = 1; row <= MAP_GRID.rows; row += 1) {
+    axes.push(`<span class="map-axis map-axis-row" style="grid-column: 1; grid-row: ${row + 1};">${rowLetter(row)}</span>`);
+  }
+  return axes.join("");
+}
+
 function buildMapCells() {
   const cells = [];
   for (let row = 1; row <= MAP_GRID.rows; row += 1) {
     for (let column = 1; column <= MAP_GRID.columns; column += 1) {
       const cellId = `r${row}-c${column}`;
       cells.push(`
-        <button class="map-cell" type="button" data-action="place-map-zone" data-cell-id="${escapeHtml(cellId)}" data-map-cell="${escapeHtml(cellId)}">
+        <button class="map-cell" type="button" data-action="place-map-zone" data-cell-id="${escapeHtml(cellId)}" data-map-cell="${escapeHtml(cellId)}" style="grid-column: ${column + 1}; grid-row: ${row + 1};">
           <span class="map-cell-label">${cellLabel(row, column)}</span>
         </button>
       `);
@@ -158,11 +172,13 @@ function buildPlacedItem(state, placement, selectedZoneId) {
     <button
       class="map-placed-zone type-${type.className} ${zone.id === selectedZoneId ? "active" : ""}"
       type="button"
+      aria-label="${escapeHtml(zone.name)} ${escapeHtml(record?.status || "LISTO")}"
+      title="${escapeHtml(zone.name)} · ${escapeHtml(record?.status || "LISTO")}"
       data-action="select-map-zone"
       data-id="${escapeHtml(zone.id)}"
       data-placement-id="${escapeHtml(placement.id)}"
       data-map-draggable="true"
-      style="grid-column: ${position.column} / span ${MAP_GRID.itemSpan}; grid-row: ${position.row} / span ${MAP_GRID.itemSpan};"
+      style="grid-column: ${position.column + 1} / span ${MAP_GRID.itemSpan}; grid-row: ${position.row + 1} / span ${MAP_GRID.itemSpan};"
     >
       <span class="map-symbol">${escapeHtml(type.symbol)}</span>
       <strong>${escapeHtml(compactZoneName(zone.name))}</strong>
@@ -231,8 +247,12 @@ function parseCell(cellId) {
 }
 
 function cellLabel(row, column) {
+  return `${rowLetter(row)}${column}`;
+}
+
+function rowLetter(row) {
   const letterIndex = (row - 1) % 26;
-  return `${String.fromCharCode(65 + letterIndex)}${column}`;
+  return String.fromCharCode(65 + letterIndex);
 }
 
 function compactZoneName(name) {
