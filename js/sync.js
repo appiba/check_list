@@ -107,11 +107,25 @@ function jsonp(webAppUrl, params = {}) {
 }
 
 function postToAppsScript(webAppUrl, fields) {
+  if (window.fetch) {
+    const body = new URLSearchParams(fields);
+    return window.fetch(webAppUrl, {
+      method: "POST",
+      mode: "no-cors",
+      body
+    }).then(() => ({ ok: true, savedAt: new Date().toISOString() })).catch(() => postWithIframe(webAppUrl, fields));
+  }
+
+  return postWithIframe(webAppUrl, fields);
+}
+
+function postWithIframe(webAppUrl, fields) {
   return new Promise((resolve, reject) => {
     const iframeName = `expo12h-sync-frame-${Date.now()}`;
     const iframe = document.createElement("iframe");
     iframe.name = iframeName;
     iframe.hidden = true;
+    iframe.style.display = "none";
 
     const form = document.createElement("form");
     form.method = "POST";

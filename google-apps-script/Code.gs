@@ -297,15 +297,18 @@ function mirrorPayload_(payload) {
   }));
 
   writeSheet_(ss, 'MAP', [
-    'Zona', 'Responsable', 'Estado', 'Cantidad', 'Cuadrícula', 'Tareas', 'Incidencias', 'Actualizado'
+    'Zona', 'Responsable', 'Estado', 'Cantidad', 'Colocados', 'Cuadrícula', 'Tareas', 'Incidencias', 'Actualizado'
   ], (catalog.mapZones || []).map((zone) => {
     const record = (state.map || {})[zone.id] || {};
+    const placements = Array.isArray(record.placements) ? record.placements : [];
+    const placedCells = placements.filter((placement) => placement && placement.cellId).map((placement) => placement.cellId);
     return [
       zone.name,
       record.responsable || zone.responsable,
       record.status || '',
-      record.quantity || '',
-      record.gridPosition || '',
+      record.quantity || placements.length || '',
+      placedCells.length || '',
+      placedCells.join(' | ') || record.gridPosition || '',
       record.tasks || '',
       record.incident || '',
       record.updatedAt || ''

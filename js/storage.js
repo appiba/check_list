@@ -47,7 +47,8 @@ export function createDefaultState() {
       vehicleCategory: "todas",
       activationSearch: "",
       incidentFormOpen: false,
-      selectedMapZone: "parqueadero-a"
+      selectedMapZone: "parqueadero-a",
+      mapZoom: 1
     },
     checklist: Object.fromEntries(
       CHECKLIST.map((task) => [
@@ -150,6 +151,12 @@ export function createDefaultState() {
           status: "LISTO",
           quantity: 1,
           gridPosition: MAP_GRID.positions[zone.id] || "",
+          placements: [
+            {
+              id: `${zone.id}-1`,
+              cellId: MAP_GRID.positions[zone.id] || ""
+            }
+          ],
           tasks: "",
           incident: "",
           updatedAt: ""

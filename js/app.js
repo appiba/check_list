@@ -3,7 +3,7 @@ import { renderBroadcast } from "./broadcast.js";
 import { renderChecklist } from "./checklist.js";
 import { renderConfig } from "./config.js";
 import { renderDashboard } from "./dashboard.js";
-import { EVENT } from "./data.js";
+import { EVENT, MAP_GRID } from "./data.js";
 import { renderIncidents } from "./incidents.js";
 import { renderMap } from "./map.js";
 import { resetState, loadState, normalizeState, saveState, STORAGE_KEY, touch } from "./storage.js";
@@ -144,25 +144,28 @@ function saveAndRender({ scrollTop = false, remote = false } = {}) {
 
 function updateRecord(collection, id, field, value) {
   if (!state[collection]?.[id]) return;
-  state[collection][id][field] = collection === "map" && field === "quantity"
-    ? Math.max(0, Number.parseInt(value, 10) || 0)
-    : value;
+  if (collection === "map" && field === "quantity") {
+    setMapQuantity(id, Math.max(0, Number.parseInt(value, 10) || 0));
+    return;
+  }
+  state[collection][id][field] = value;
   touch(state[collection][id]);
   saveAndRender({ remote: true });
 }
 
-function moveMapZone(zoneId, targetCellId) {
+function moveMapZone(zoneId, targetCellId, placementId = "") {
   if (!state.map?.[zoneId] || !targetCellId) return;
 
-  const sourceCellId = state.map[zoneId].gridPosition || "";
-  const displacedZoneId = Object.entries(state.map).find(([id, record]) => id !== zoneId && record.gridPosition === targetCellId)?.[0];
+  ensureMapPlacements(zoneId);
+  const normalizedCellId = normalizeMapCell(targetCellId);
+  const placement = getMapPlacementForMove(zoneId, placementId);
+  if (!placement) return;
 
-  if (displacedZoneId) {
-    state.map[displacedZoneId].gridPosition = sourceCellId;
-    touch(state.map[displacedZoneId]);
-  }
+  clearMapCollisions(zoneId, placement.id, normalizedCellId);
 
-  state.map[zoneId].gridPosition = targetCellId;
+  placement.cellId = normalizedCellId;
+  state.map[zoneId].gridPosition = normalizedCellId;
+  state.map[zoneId].quantity = state.map[zoneId].placements.length;
   touch(state.map[zoneId]);
   state.ui.selectedMapZone = zoneId;
   saveAndRender({ remote: true });
@@ -170,7 +173,13 @@ function moveMapZone(zoneId, targetCellId) {
 
 function removeMapZone(zoneId) {
   if (!state.map?.[zoneId]) return;
-  state.map[zoneId].gridPosition = "";
+  ensureMapPlacements(zoneId);
+  const placed = [...state.map[zoneId].placements].reverse().find((placement) => placement.cellId);
+  if (placed) {
+    placed.cellId = "";
+  }
+  state.map[zoneId].gridPosition = state.map[zoneId].placements.find((placement) => placement.cellId)?.cellId || "";
+  state.map[zoneId].quantity = state.map[zoneId].placements.length;
   touch(state.map[zoneId]);
   state.ui.selectedMapZone = zoneId;
   saveAndRender({ remote: true });
@@ -178,11 +187,102 @@ function removeMapZone(zoneId) {
 
 function adjustMapQuantity(zoneId, delta) {
   if (!state.map?.[zoneId]) return;
-  const current = Number.parseInt(state.map[zoneId].quantity, 10) || 0;
-  state.map[zoneId].quantity = Math.max(0, current + delta);
+  ensureMapPlacements(zoneId);
+  setMapQuantity(zoneId, Math.max(0, state.map[zoneId].placements.length + delta));
+}
+
+function setMapQuantity(zoneId, quantity) {
+  if (!state.map?.[zoneId]) return;
+  ensureMapPlacements(zoneId);
+  const placements = state.map[zoneId].placements;
+  while (placements.length < quantity) {
+    placements.push({ id: `${zoneId}-${Date.now()}-${placements.length + 1}`, cellId: "" });
+  }
+  while (placements.length > quantity) {
+    let removableIndex = -1;
+    for (let index = placements.length - 1; index >= 0; index -= 1) {
+      if (!placements[index].cellId) {
+        removableIndex = index;
+        break;
+      }
+    }
+    placements.splice(removableIndex >= 0 ? removableIndex : placements.length - 1, 1);
+  }
+  state.map[zoneId].quantity = placements.length;
+  state.map[zoneId].gridPosition = placements.find((placement) => placement.cellId)?.cellId || "";
   touch(state.map[zoneId]);
   state.ui.selectedMapZone = zoneId;
   saveAndRender({ remote: true });
+}
+
+function ensureMapPlacements(zoneId) {
+  const record = state.map[zoneId];
+  if (!record) return;
+  if (!Array.isArray(record.placements)) {
+    record.placements = record.gridPosition ? [{ id: `${zoneId}-1`, cellId: record.gridPosition }] : [];
+  }
+  const requestedQuantity = Math.max(record.placements.length, Number.parseInt(record.quantity, 10) || 0);
+  while (record.placements.length < requestedQuantity) {
+    record.placements.push({ id: `${zoneId}-${Date.now()}-${record.placements.length + 1}`, cellId: "" });
+  }
+  record.quantity = record.placements.length;
+}
+
+function getMapPlacementForMove(zoneId, placementId) {
+  ensureMapPlacements(zoneId);
+  const placements = state.map[zoneId].placements;
+  const existing = placementId ? placements.find((placement) => placement.id === placementId) : null;
+  if (existing) return existing;
+  const unplaced = placements.find((placement) => !placement.cellId);
+  if (unplaced) return unplaced;
+  const placement = { id: `${zoneId}-${Date.now()}-${placements.length + 1}`, cellId: "" };
+  placements.push(placement);
+  state.map[zoneId].quantity = placements.length;
+  return placement;
+}
+
+function normalizeMapCell(cellId) {
+  const match = String(cellId).match(/^r(\d+)-c(\d+)$/);
+  if (!match) return "r1-c1";
+  const row = Math.min(Math.max(Number(match[1]), 1), MAP_GRID.rows - MAP_GRID.itemSpan + 1);
+  const column = Math.min(Math.max(Number(match[2]), 1), MAP_GRID.columns - MAP_GRID.itemSpan + 1);
+  return `r${row}-c${column}`;
+}
+
+function clearMapCollisions(zoneId, placementId, targetCellId) {
+  const targetCells = occupiedMapCells(targetCellId);
+  Object.entries(state.map).forEach(([otherZoneId, record]) => {
+    ensureMapPlacements(otherZoneId);
+    record.placements.forEach((placement) => {
+      if (otherZoneId === zoneId && placement.id === placementId) return;
+      if (!placement.cellId) return;
+      const hasCollision = occupiedMapCells(placement.cellId).some((cell) => targetCells.includes(cell));
+      if (hasCollision) {
+        placement.cellId = "";
+        record.gridPosition = record.placements.find((item) => item.cellId)?.cellId || "";
+        touch(record);
+      }
+    });
+  });
+}
+
+function occupiedMapCells(cellId) {
+  const match = String(cellId).match(/^r(\d+)-c(\d+)$/);
+  if (!match) return [];
+  const row = Number(match[1]);
+  const column = Number(match[2]);
+  return [
+    `r${row}-c${column}`,
+    `r${row}-c${column + 1}`,
+    `r${row + 1}-c${column}`,
+    `r${row + 1}-c${column + 1}`
+  ];
+}
+
+function adjustMapZoom(delta) {
+  const current = Number(state.ui.mapZoom || 1);
+  state.ui.mapZoom = Math.min(2.2, Math.max(0.7, Math.round((current + delta) * 100) / 100));
+  saveAndRender({ remote: false });
 }
 
 function toggleRecord(collection, id, field, checked) {
@@ -207,7 +307,8 @@ function moveMapDragGhost(x, y) {
 }
 
 function updateMapDropTarget(x, y) {
-  const targetCell = document.elementFromPoint(x, y)?.closest("[data-map-cell]");
+  const elements = document.elementsFromPoint ? document.elementsFromPoint(x, y) : [document.elementFromPoint(x, y)];
+  const targetCell = elements.map((element) => element?.closest?.("[data-map-cell]")).find(Boolean);
   if (targetCell === mapDrag.targetCell) return;
   mapDrag.targetCell?.classList.remove("drop-target");
   mapDrag.targetCell = targetCell;
@@ -216,7 +317,7 @@ function updateMapDropTarget(x, y) {
 
 function finishMapDrag(event) {
   if (!mapDrag || event.pointerId !== mapDrag.pointerId) return;
-  const { dragging, targetCell, zoneId } = mapDrag;
+  const { dragging, targetCell, zoneId, placementId } = mapDrag;
   cleanupMapDrag();
 
   if (dragging) {
@@ -227,7 +328,7 @@ function finishMapDrag(event) {
   }
 
   if (dragging && targetCell?.dataset.mapCell) {
-    moveMapZone(zoneId, targetCell.dataset.mapCell);
+    moveMapZone(zoneId, targetCell.dataset.mapCell, placementId);
   }
 }
 
@@ -302,6 +403,10 @@ app.addEventListener("click", (event) => {
     adjustMapQuantity(id, Number.parseInt(target.dataset.delta, 10) || 0);
   }
 
+  if (action === "adjust-map-zoom") {
+    adjustMapZoom(Number.parseFloat(target.dataset.delta) || 0);
+  }
+
   if (action === "reset-event-data") {
     const confirmed = confirm("¿Reiniciar todos los datos guardados de EXPO 12H en este navegador?");
     if (confirmed) {
@@ -337,6 +442,7 @@ app.addEventListener("pointerdown", (event) => {
   mapDrag = {
     pointerId: event.pointerId,
     zoneId: dragSource.dataset.id,
+    placementId: dragSource.dataset.placementId || "",
     source: dragSource,
     startX: event.clientX,
     startY: event.clientY,

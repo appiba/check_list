@@ -1,10 +1,29 @@
 import { CHECKLIST, MAP_GRID, MAP_ZONES } from "./data.js";
 import { badge, escapeHtml, formatDateTime, optionList } from "./utils.js";
 
+const ZONE_TYPES = {
+  "parqueadero-a": { className: "vehicle", symbol: "P", label: "Parqueadero" },
+  "parqueadero-b": { className: "vehicle", symbol: "P", label: "Parqueadero" },
+  tarima: { className: "stage", symbol: "T", label: "Tarima" },
+  "zona-fest-derecha": { className: "fest", symbol: "ZF", label: "Zona Fest" },
+  "zona-fest-izquierda": { className: "fest", symbol: "ZF", label: "Zona Fest" },
+  "carril-vip": { className: "vip", symbol: "VIP", label: "VIP" },
+  "carpas-publico": { className: "tent", symbol: "C", label: "Carpas" },
+  "pre-grid": { className: "grid", symbol: "G", label: "Pre-grid" },
+  "ingreso-vehiculos": { className: "access", symbol: "IN", label: "Ingreso" },
+  "salida-vehiculos": { className: "access", symbol: "OUT", label: "Salida" },
+  "punto-policia": { className: "police", symbol: "POL", label: "Policia" },
+  "seguridad-a": { className: "security", symbol: "S", label: "Seguridad" },
+  "seguridad-b": { className: "security", symbol: "S", label: "Seguridad" }
+};
+
 export function renderMap(state) {
   const selectedZone = MAP_ZONES.find((zone) => zone.id === state.ui.selectedMapZone) || MAP_ZONES[0];
   const selectedRecord = state.map[selectedZone.id];
-  const occupiedCells = getOccupiedCells(state);
+  const placements = getAllPlacements(state);
+  const selectedPlacements = getZonePlacements(state, selectedZone.id);
+  const placedSelected = selectedPlacements.filter((placement) => placement.cellId).length;
+  const mapZoom = Number(state.ui.mapZoom || 1);
   const relatedTasks = getRelatedTasks(selectedZone.name);
   const relatedIncidents = state.incidents.filter((incident) => {
     const name = selectedZone.name.toLowerCase();
@@ -18,46 +37,47 @@ export function renderMap(state) {
           <p class="eyebrow">Mapa / render del evento</p>
           <h2 id="map-title">MAPA OPERATIVO</h2>
         </div>
-        ${badge("RENDER 3D PENDIENTE", "info")}
+        ${badge(`${placedCount(state)} elementos`, "info")}
       </div>
 
       <article class="map-shell map-builder">
         <div class="map-board-panel">
-          <div class="panel-header">
-            <span class="section-kicker">Cuadrícula operativa</span>
-            <span class="map-help">Arrastra con el dedo para mover</span>
+          <div class="panel-header map-board-header">
+            <div>
+              <span class="section-kicker">Cuadrícula operativa</span>
+              <p class="map-help">Cada elemento ocupa 4 cuadros. Arrastra con el dedo para mover.</p>
+            </div>
+            <div class="map-zoom-controls" aria-label="Zoom del mapa">
+              <button type="button" data-action="adjust-map-zoom" data-delta="-0.15">-</button>
+              <span>${Math.round(mapZoom * 100)}%</span>
+              <button type="button" data-action="adjust-map-zoom" data-delta="0.15">+</button>
+            </div>
           </div>
-          <div class="event-map-grid" style="--map-cols: ${MAP_GRID.columns};" aria-label="Cuadrícula editable del evento">
-            ${buildMapCells(state, occupiedCells, selectedZone.id)}
+          <div class="event-map-grid" style="--map-cols: ${MAP_GRID.columns}; --map-rows: ${MAP_GRID.rows}; --map-zoom: ${mapZoom};" aria-label="Cuadrícula editable del evento">
+            ${buildMapCells()}
+            ${placements.map((placement) => buildPlacedItem(state, placement, selectedZone.id)).join("")}
           </div>
-          <p class="map-instruction">Toca un cuadro vacío para colocar la zona seleccionada. Arrastra una tarjeta para moverla, intercambiarla o sacarla de la lista al mapa.</p>
+          <p class="map-instruction">Toca un cuadro vacío para colocar el elemento seleccionado. Usa + para crear más elementos y luego colócalos en el mapa.</p>
         </div>
 
         <div class="map-zone-grid map-zone-list" aria-label="Elementos del mapa">
           <div class="map-list-head">
             <span class="section-kicker">Elementos</span>
-            <span>${placedCount(state)} / ${MAP_ZONES.length} ubicados</span>
+            <span>${placedCount(state)} colocados</span>
           </div>
-          ${MAP_ZONES.map(
-            (zone) => `
-              <button class="zone-button map-zone-card ${zone.id === selectedZone.id ? "active" : ""}" type="button" data-action="select-map-zone" data-id="${escapeHtml(zone.id)}" data-map-draggable="true">
-                <strong>${escapeHtml(zone.name)}</strong>
-                <span>${escapeHtml(zonePositionLabel(state, zone.id))} · x${escapeHtml(zoneQuantity(state, zone.id))}</span>
-              </button>
-            `
-          ).join("")}
+          ${MAP_ZONES.map((zone) => buildZoneCard(state, zone, selectedZone.id)).join("")}
         </div>
       </article>
 
       <article class="panel zone-detail">
         <div class="panel-header">
-          <span class="section-kicker">Zona seleccionada</span>
+          <span class="section-kicker">Elemento seleccionado</span>
           ${badge(selectedRecord.status, selectedRecord.status)}
         </div>
         <h3>${escapeHtml(selectedZone.name)}</h3>
         <div class="map-detail-actions">
-          <span>Ubicación: ${escapeHtml(zonePositionLabel(state, selectedZone.id))} · Cantidad: x${escapeHtml(zoneQuantity(state, selectedZone.id))}</span>
-          <button class="mini-action" type="button" data-action="remove-map-zone" data-id="${escapeHtml(selectedZone.id)}">Quitar del mapa</button>
+          <span>${escapeHtml(zoneType(selectedZone.id).label)} · ${placedSelected}/${selectedPlacements.length} colocados</span>
+          <button class="mini-action" type="button" data-action="remove-map-zone" data-id="${escapeHtml(selectedZone.id)}">Quitar último del mapa</button>
         </div>
         <div class="task-fields compact-fields">
           <label>
@@ -81,7 +101,7 @@ export function renderMap(state) {
         </div>
         <label class="wide-field">
           Tareas
-          <textarea rows="2" data-action="update-map-field" data-id="${escapeHtml(selectedZone.id)}" data-field="tasks" placeholder="Tareas específicas de la zona">${escapeHtml(selectedRecord.tasks)}</textarea>
+          <textarea rows="2" data-action="update-map-field" data-id="${escapeHtml(selectedZone.id)}" data-field="tasks" placeholder="Tareas específicas del elemento">${escapeHtml(selectedRecord.tasks)}</textarea>
         </label>
         <label class="wide-field">
           Incidencias
@@ -113,60 +133,106 @@ export function renderMap(state) {
   `;
 }
 
-function buildMapCells(state, occupiedCells, selectedZoneId) {
+function buildMapCells() {
   const cells = [];
   for (let row = 1; row <= MAP_GRID.rows; row += 1) {
     for (let column = 1; column <= MAP_GRID.columns; column += 1) {
       const cellId = `r${row}-c${column}`;
-      const zone = occupiedCells[cellId];
-      const record = zone ? state.map[zone.id] : null;
       cells.push(`
-        <div class="map-cell ${zone ? "filled" : "empty"} ${zone?.id === selectedZoneId ? "active" : ""}" data-map-cell="${escapeHtml(cellId)}">
+        <button class="map-cell" type="button" data-action="place-map-zone" data-cell-id="${escapeHtml(cellId)}" data-map-cell="${escapeHtml(cellId)}">
           <span class="map-cell-label">${cellLabel(row, column)}</span>
-          ${
-            zone
-              ? `<button class="map-placed-zone" type="button" data-action="select-map-zone" data-id="${escapeHtml(zone.id)}" data-map-draggable="true">
-                  <strong>${escapeHtml(compactZoneName(zone.name))}</strong>
-                  <span>${escapeHtml(record?.status || "LISTO")} · x${escapeHtml(zoneQuantity(state, zone.id))}</span>
-                </button>`
-              : `<button class="map-empty-zone" type="button" data-action="place-map-zone" data-cell-id="${escapeHtml(cellId)}">
-                  Colocar aquí
-                </button>`
-          }
-        </div>
+        </button>
       `);
     }
   }
   return cells.join("");
 }
 
-function getOccupiedCells(state) {
-  return Object.fromEntries(
-    MAP_ZONES
-      .map((zone) => [state.map[zone.id]?.gridPosition, zone])
-      .filter(([cellId]) => Boolean(cellId))
+function buildPlacedItem(state, placement, selectedZoneId) {
+  const zone = MAP_ZONES.find((item) => item.id === placement.zoneId);
+  if (!zone || !placement.cellId) return "";
+  const record = state.map[zone.id];
+  const type = zoneType(zone.id);
+  const position = parseCell(placement.cellId);
+  return `
+    <button
+      class="map-placed-zone type-${type.className} ${zone.id === selectedZoneId ? "active" : ""}"
+      type="button"
+      data-action="select-map-zone"
+      data-id="${escapeHtml(zone.id)}"
+      data-placement-id="${escapeHtml(placement.id)}"
+      data-map-draggable="true"
+      style="grid-column: ${position.column} / span ${MAP_GRID.itemSpan}; grid-row: ${position.row} / span ${MAP_GRID.itemSpan};"
+    >
+      <span class="map-symbol">${escapeHtml(type.symbol)}</span>
+      <strong>${escapeHtml(compactZoneName(zone.name))}</strong>
+      <span>${escapeHtml(record?.status || "LISTO")}</span>
+    </button>
+  `;
+}
+
+function buildZoneCard(state, zone, selectedZoneId) {
+  const type = zoneType(zone.id);
+  const placements = getZonePlacements(state, zone.id);
+  const placed = placements.filter((placement) => placement.cellId).length;
+  return `
+    <div class="zone-button map-zone-card type-${type.className} ${zone.id === selectedZoneId ? "active" : ""}">
+      <button class="map-zone-main" type="button" data-action="select-map-zone" data-id="${escapeHtml(zone.id)}" data-map-draggable="true">
+        <span class="map-symbol">${escapeHtml(type.symbol)}</span>
+        <span>
+          <strong>${escapeHtml(zone.name)}</strong>
+          <em>${placed}/${placements.length} colocados</em>
+        </span>
+      </button>
+      <button class="map-add-btn" type="button" data-action="adjust-map-quantity" data-id="${escapeHtml(zone.id)}" data-delta="1" aria-label="Agregar ${escapeHtml(zone.name)}">+</button>
+    </div>
+  `;
+}
+
+function getAllPlacements(state) {
+  return MAP_ZONES.flatMap((zone) =>
+    getZonePlacements(state, zone.id).map((placement) => ({
+      ...placement,
+      zoneId: zone.id
+    }))
   );
 }
 
-function placedCount(state) {
-  return MAP_ZONES.filter((zone) => state.map[zone.id]?.gridPosition).length;
+function getZonePlacements(state, zoneId) {
+  const record = state.map[zoneId] || {};
+  if (Array.isArray(record.placements)) {
+    return record.placements;
+  }
+  if (record.gridPosition) {
+    return [{ id: `${zoneId}-1`, cellId: record.gridPosition }];
+  }
+  return [];
 }
 
-function zonePositionLabel(state, zoneId) {
-  const position = state.map[zoneId]?.gridPosition;
-  if (!position) return "Sin ubicar";
-  const match = position.match(/^r(\d+)-c(\d+)$/);
-  if (!match) return position;
-  return `Cuadro ${cellLabel(Number(match[1]), Number(match[2]))}`;
+function placedCount(state) {
+  return getAllPlacements(state).filter((placement) => placement.cellId).length;
 }
 
 function zoneQuantity(state, zoneId) {
-  const value = Number(state.map[zoneId]?.quantity ?? 1);
-  return String(Number.isFinite(value) && value >= 0 ? value : 1);
+  return String(getZonePlacements(state, zoneId).length);
+}
+
+function zoneType(zoneId) {
+  return ZONE_TYPES[zoneId] || { className: "default", symbol: "Z", label: "Zona" };
+}
+
+function parseCell(cellId) {
+  const match = String(cellId || "").match(/^r(\d+)-c(\d+)$/);
+  if (!match) return { row: 1, column: 1 };
+  return {
+    row: Number(match[1]),
+    column: Number(match[2])
+  };
 }
 
 function cellLabel(row, column) {
-  return `${String.fromCharCode(64 + row)}${column}`;
+  const letterIndex = (row - 1) % 26;
+  return `${String.fromCharCode(65 + letterIndex)}${column}`;
 }
 
 function compactZoneName(name) {
