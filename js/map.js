@@ -34,7 +34,8 @@ export function renderMap(state) {
   const selectedPlacements = getZonePlacements(state, selectedZone.id);
   const placedSelected = selectedPlacements.filter((placement) => placement.cellId).length;
   const selectedPlacementId = state.ui.selectedMapPlacement || "";
-  const selectedPlacedLabel = selectedPlacements.find((placement) => placement.id === selectedPlacementId && placement.cellId)?.cellId;
+  const selectedPlacement = selectedPlacements.find((placement) => placement.id === selectedPlacementId && placement.cellId);
+  const selectedPlacedLabel = selectedPlacement?.cellId;
   const mapMode = state.ui.mapMode === "pan" ? "pan" : "place";
   const pickerCell = mapMode === "place" ? state.ui.mapPickerCell || "" : "";
   const mapZoom = Number(state.ui.mapZoom || 1);
@@ -59,7 +60,7 @@ export function renderMap(state) {
           <div class="panel-header map-board-header">
             <div>
               <span class="section-kicker">Cuadrícula operativa</span>
-              <p class="map-help">Toca un cuadro y escoge qué elemento colocar. Cambia a mover mapa para panear con el dedo.</p>
+              <p class="map-help">Toca un elemento puesto y luego un cuadro vecino para moverlo. Cambia a mover mapa para panear con el dedo.</p>
             </div>
             <div class="map-toolbar">
               <div class="map-mode-controls" aria-label="Modo del mapa">
@@ -76,11 +77,12 @@ export function renderMap(state) {
           <div class="map-viewport" data-map-viewport="true" data-map-mode="${mapMode}" aria-label="Vista desplazable del mapa">
             <div class="event-map-grid" style="--map-cols: ${MAP_GRID.columns}; --map-rows: ${MAP_GRID.rows}; --map-zoom: ${mapZoom};" aria-label="Cuadrícula editable del evento">
               ${buildMapAxes()}
-              ${buildMapCells()}
+              ${buildMapCells(selectedPlacedLabel)}
               ${placements.map((placement) => buildPlacedItem(state, placement, selectedZone.id, selectedPlacementId)).join("")}
             </div>
           </div>
-          <p class="map-instruction">Modo colocar: toca un cuadro y elige el elemento. Modo mover mapa: arrastra la imagen completa para verla mejor.</p>
+          ${selectedPlacement ? buildMapMoveControls(selectedZone, selectedPlacement) : ""}
+          <p class="map-instruction">Modo colocar: toca un cuadro vacío para elegir elemento. Si hay uno seleccionado, toca un cuadro vecino marcado para moverlo.</p>
         </div>
 
         <div class="map-zone-grid map-zone-list" aria-label="Elementos del mapa">
@@ -187,13 +189,14 @@ function buildMapAxes() {
   return axes.join("");
 }
 
-function buildMapCells() {
+function buildMapCells(selectedCellId = "") {
   const cells = [];
   for (let row = 1; row <= MAP_GRID.rows; row += 1) {
     for (let column = 1; column <= MAP_GRID.columns; column += 1) {
       const cellId = `r${row}-c${column}`;
+      const isMoveTarget = isAdjacentCellId(selectedCellId, cellId);
       cells.push(`
-        <button class="map-cell" type="button" data-action="place-map-zone" data-cell-id="${escapeHtml(cellId)}" data-map-cell="${escapeHtml(cellId)}" style="grid-column: ${column + 1}; grid-row: ${row + 1};">
+        <button class="map-cell ${isMoveTarget ? "move-target" : ""}" type="button" data-action="place-map-zone" data-cell-id="${escapeHtml(cellId)}" data-map-cell="${escapeHtml(cellId)}" style="grid-column: ${column + 1}; grid-row: ${row + 1};" aria-label="${isMoveTarget ? `Mover seleccionado a ${cellLabel(row, column)}` : cellLabel(row, column)}">
           <span class="map-cell-label">${cellLabel(row, column)}</span>
         </button>
       `);
@@ -224,6 +227,25 @@ function buildPlacedItem(state, placement, selectedZoneId, selectedPlacementId) 
       <strong>${escapeHtml(compactZoneName(zone.name))}</strong>
       <span>${escapeHtml(record?.status || "LISTO")}</span>
     </button>
+  `;
+}
+
+function buildMapMoveControls(zone, placement) {
+  return `
+    <div class="map-move-controls" aria-label="Mover elemento seleccionado">
+      <span class="map-move-title">Mover ${escapeHtml(compactZoneName(zone.name))} desde ${escapeHtml(cellLabelFromId(placement.cellId))}</span>
+      <div class="map-nudge-grid">
+        <span></span>
+        <button type="button" data-action="nudge-map-placement" data-id="${escapeHtml(zone.id)}" data-placement-id="${escapeHtml(placement.id)}" data-direction="up" aria-label="Mover arriba">Arriba</button>
+        <span></span>
+        <button type="button" data-action="nudge-map-placement" data-id="${escapeHtml(zone.id)}" data-placement-id="${escapeHtml(placement.id)}" data-direction="left" aria-label="Mover izquierda">Izq.</button>
+        <strong>${escapeHtml(cellLabelFromId(placement.cellId))}</strong>
+        <button type="button" data-action="nudge-map-placement" data-id="${escapeHtml(zone.id)}" data-placement-id="${escapeHtml(placement.id)}" data-direction="right" aria-label="Mover derecha">Der.</button>
+        <span></span>
+        <button type="button" data-action="nudge-map-placement" data-id="${escapeHtml(zone.id)}" data-placement-id="${escapeHtml(placement.id)}" data-direction="down" aria-label="Mover abajo">Abajo</button>
+        <span></span>
+      </div>
+    </div>
   `;
 }
 
@@ -388,6 +410,13 @@ function cellLabel(row, column) {
 function cellLabelFromId(cellId) {
   const position = parseCell(cellId);
   return cellLabel(position.row, position.column);
+}
+
+function isAdjacentCellId(sourceCellId, targetCellId) {
+  if (!sourceCellId || !targetCellId) return false;
+  const source = parseCell(sourceCellId);
+  const target = parseCell(targetCellId);
+  return Math.abs(source.row - target.row) + Math.abs(source.column - target.column) === 1;
 }
 
 function rowLetter(row) {

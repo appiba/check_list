@@ -961,6 +961,13 @@ textarea {
   box-shadow: inset 0 0 0 1px rgba(242, 201, 76, 0.22);
 }
 
+.map-cell.move-target {
+  z-index: 2;
+  border-color: rgba(242, 201, 76, 0.72);
+  background: rgba(242, 201, 76, 0.14);
+  box-shadow: inset 0 0 0 1px rgba(242, 201, 76, 0.28);
+}
+
 .map-placed-zone {
   z-index: 4;
   width: 100%;
@@ -1008,6 +1015,52 @@ textarea {
 
 .map-placed-zone.active {
   box-shadow: 0 0 0 2px rgba(242, 201, 76, 0.35), 0 14px 30px rgba(0, 0, 0, 0.42);
+}
+
+.map-move-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid rgba(242, 201, 76, 0.28);
+  border-radius: var(--radius);
+  background: rgba(242, 201, 76, 0.08);
+}
+
+.map-move-title {
+  color: var(--muted-strong);
+  font-size: 0.74rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.map-nudge-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 54px);
+  gap: 5px;
+}
+
+.map-nudge-grid button,
+.map-nudge-grid strong {
+  min-height: 32px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(242, 201, 76, 0.42);
+  border-radius: var(--radius);
+  font-size: 0.65rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.map-nudge-grid button {
+  color: var(--gold);
+  background: var(--gold-soft);
+}
+
+.map-nudge-grid strong {
+  color: #05070a;
+  background: var(--gold);
 }
 
 .map-zone-list {
@@ -1078,6 +1131,16 @@ textarea {
 @media (max-width: 559px) {
   .map-create-form {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 680px) {
+  .map-move-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .map-nudge-grid {
+    grid-template-columns: repeat(3, minmax(48px, 1fr));
   }
 }
 
