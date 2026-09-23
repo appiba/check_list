@@ -24,8 +24,8 @@ let autoPullTimer;
 let autoPullInFlight = false;
 let lastLocalRemoteEditAt = 0;
 
-const AUTO_PULL_INTERVAL_MS = 7000;
-const LOCAL_EDIT_GRACE_MS = 4000;
+const AUTO_PULL_INTERVAL_MS = 2000;
+const LOCAL_EDIT_GRACE_MS = 1000;
 
 const NAV_ITEMS = [
   { id: "dashboard", label: "INICIO", short: "INICIO" },

@@ -13,7 +13,7 @@ import {
 
 const JSONP_TIMEOUT_MS = 12000;
 const POST_TIMEOUT_MS = 16000;
-const SAVE_DEBOUNCE_MS = 300;
+const SAVE_DEBOUNCE_MS = 200;
 let saveTimer;
 let pendingSave;
 
