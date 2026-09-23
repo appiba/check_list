@@ -13,8 +13,9 @@ import {
 
 const JSONP_TIMEOUT_MS = 12000;
 const POST_TIMEOUT_MS = 16000;
-const SAVE_DEBOUNCE_MS = 1400;
+const SAVE_DEBOUNCE_MS = 300;
 let saveTimer;
+let pendingSave;
 
 export function canSync(state) {
   return Boolean(state.sync?.enabled && state.sync?.webAppUrl?.trim());
@@ -51,9 +52,30 @@ export function queueRemoteSave(state, callbacks = {}) {
   if (!canSync(state)) return;
   clearTimeout(saveTimer);
   const snapshot = JSON.parse(JSON.stringify(state));
+  pendingSave = { snapshot, callbacks };
   saveTimer = setTimeout(() => {
-    pushState(snapshot).then(callbacks.onSuccess).catch(callbacks.onError);
+    flushQueuedRemoteSave().catch(() => {});
   }, SAVE_DEBOUNCE_MS);
+}
+
+export function flushQueuedRemoteSave(options = {}) {
+  if (!pendingSave) return Promise.resolve({ ok: true, skipped: true });
+
+  clearTimeout(saveTimer);
+  saveTimer = null;
+
+  const { snapshot, callbacks } = pendingSave;
+  pendingSave = null;
+
+  return pushState(snapshot, options)
+    .then((result) => {
+      callbacks.onSuccess?.(result);
+      return result;
+    })
+    .catch((error) => {
+      callbacks.onError?.(error);
+      throw error;
+    });
 }
 
 export async function testConnection(webAppUrl) {
@@ -68,11 +90,11 @@ export async function pullState(webAppUrl) {
   return response;
 }
 
-export function pushState(state) {
+export function pushState(state, options = {}) {
   return postToAppsScript(getSyncUrl({ sync: state.sync }), {
     action: "save",
     payload: JSON.stringify(buildSyncPayload(state))
-  });
+  }, options);
 }
 
 function jsonp(webAppUrl, params = {}) {
@@ -109,12 +131,13 @@ function jsonp(webAppUrl, params = {}) {
   });
 }
 
-function postToAppsScript(webAppUrl, fields) {
+function postToAppsScript(webAppUrl, fields, options = {}) {
   if (window.fetch) {
     const body = new URLSearchParams(fields);
     return window.fetch(webAppUrl, {
       method: "POST",
       mode: "no-cors",
+      keepalive: Boolean(options.keepalive),
       body
     }).then(() => ({ ok: true, savedAt: new Date().toISOString() })).catch(() => postWithIframe(webAppUrl, fields));
   }

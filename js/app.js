@@ -7,7 +7,7 @@ import { EVENT, MAP_GRID, MAP_ZONES } from "./data.js";
 import { renderIncidents } from "./incidents.js";
 import { renderMap } from "./map.js";
 import { resetState, loadState, normalizeState, saveState, STORAGE_KEY, touch } from "./storage.js";
-import { canSync, pullState, pushState, queueRemoteSave, testConnection } from "./sync.js";
+import { canSync, flushQueuedRemoteSave, pullState, pushState, queueRemoteSave, testConnection } from "./sync.js";
 import { renderTeam } from "./team.js";
 import { renderTimeline } from "./timeline.js";
 import { escapeHtml, getFormValue } from "./utils.js";
@@ -976,8 +976,15 @@ function startAutoPull() {
   if (autoPullTimer) return;
   autoPullTimer = window.setInterval(autoPullState, AUTO_PULL_INTERVAL_MS);
   window.addEventListener("focus", autoPullState);
+  window.addEventListener("pagehide", () => {
+    flushQueuedRemoteSave({ keepalive: true }).catch(() => {});
+  });
   document.addEventListener("visibilitychange", () => {
-    if (!document.hidden) autoPullState();
+    if (document.hidden) {
+      flushQueuedRemoteSave({ keepalive: true }).catch(() => {});
+      return;
+    }
+    autoPullState();
   });
 }
 
