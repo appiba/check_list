@@ -22,11 +22,15 @@ const LEGACY_NAME_REPLACEMENTS = [
 ];
 const ZONA_FEST_ID = "zona-fest";
 const LEGACY_ZONA_FEST_IDS = ["zona-fest-derecha", "zona-fest-izquierda"];
+const LEGACY_MAP_GRID_COLUMNS = 12;
+const LEGACY_MAP_GRID_ROWS = 12;
 
 export function createDefaultState() {
   return {
     meta: {
       version: 1,
+      mapGridColumns: MAP_GRID.columns,
+      mapGridRows: MAP_GRID.rows,
       createdAt: nowIso(),
       updatedAt: nowIso()
     },
@@ -202,7 +206,9 @@ function mergeDefaults(defaultState, savedState) {
 
 export function normalizeState(savedState) {
   const defaults = createDefaultState();
-  const merged = mergeDefaults(defaults, migrateLegacyState(savedState));
+  const migrated = migrateLegacyState(savedState);
+  const merged = mergeDefaults(defaults, migrated);
+  migrateMapGridSize(merged, migrated);
   if (!merged.sync.webAppUrl) {
     merged.sync.webAppUrl = defaults.sync.webAppUrl;
   }
@@ -292,6 +298,61 @@ function migrateZonaFestMap(state) {
     state.ui.selectedMapZone = ZONA_FEST_ID;
     state.ui.selectedMapPlacement = "";
   }
+}
+
+function migrateMapGridSize(state, sourceState = state) {
+  if (!isPlainObject(state) || !isPlainObject(state.map)) return;
+
+  const meta = isPlainObject(state.meta) ? state.meta : {};
+  const sourceMeta = isPlainObject(sourceState?.meta) ? sourceState.meta : {};
+  const fromColumns = Number.parseInt(sourceMeta.mapGridColumns, 10) || LEGACY_MAP_GRID_COLUMNS;
+  const fromRows = Number.parseInt(sourceMeta.mapGridRows, 10) || LEGACY_MAP_GRID_ROWS;
+  const isCurrentGrid = fromColumns === MAP_GRID.columns && fromRows === MAP_GRID.rows;
+
+  if (!isCurrentGrid) {
+    Object.values(state.map).forEach((record) => {
+      if (!isPlainObject(record)) return;
+
+      if (record.gridPosition) {
+        record.gridPosition = scaleMapCell(record.gridPosition, fromRows, fromColumns);
+      }
+
+      if (Array.isArray(record.placements)) {
+        record.placements.forEach((placement) => {
+          if (placement?.cellId) {
+            placement.cellId = scaleMapCell(placement.cellId, fromRows, fromColumns);
+          }
+        });
+      }
+    });
+
+    if (isPlainObject(state.ui) && state.ui.mapPickerCell) {
+      state.ui.mapPickerCell = scaleMapCell(state.ui.mapPickerCell, fromRows, fromColumns);
+    }
+  }
+
+  state.meta = {
+    ...meta,
+    mapGridColumns: MAP_GRID.columns,
+    mapGridRows: MAP_GRID.rows
+  };
+}
+
+function scaleMapCell(cellId, fromRows, fromColumns) {
+  const match = String(cellId || "").match(/^r(\d+)-c(\d+)$/);
+  if (!match) return "";
+
+  const row = Number(match[1]);
+  const column = Number(match[2]);
+  const scaledRow = scaleGridIndex(row, fromRows, MAP_GRID.rows);
+  const scaledColumn = scaleGridIndex(column, fromColumns, MAP_GRID.columns);
+  return `r${scaledRow}-c${scaledColumn}`;
+}
+
+function scaleGridIndex(value, fromSize, toSize) {
+  if (fromSize <= 1) return Math.min(Math.max(value, 1), toSize);
+  const scaled = Math.round(((value - 1) / (fromSize - 1)) * (toSize - 1)) + 1;
+  return Math.min(Math.max(scaled, 1), toSize);
 }
 
 export function loadState() {

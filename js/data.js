@@ -869,8 +869,8 @@ export const MAP_ZONES = [
 ].map(([id, name, responsable]) => ({ id, name, responsable }));
 
 export const MAP_GRID = {
-  columns: 12,
-  rows: 12,
+  columns: 17,
+  rows: 17,
   itemSpan: 1,
   positions: {
     "parqueadero-a": "r1-c9",

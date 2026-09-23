@@ -372,6 +372,8 @@ function createMapZone(form) {
 
   const id = uniqueMapZoneId(name);
   const type = getFormValue(formData, "type", "default");
+  const symbol = normalizeSymbol(getFormValue(formData, "symbol"), name);
+  const color = normalizeColor(getFormValue(formData, "color"), "#f2c94c");
   const now = new Date().toISOString();
 
   state.customMapZones = Array.isArray(state.customMapZones) ? state.customMapZones : [];
@@ -379,7 +381,9 @@ function createMapZone(form) {
     id,
     name,
     responsable: "Operación",
-    type
+    type,
+    symbol,
+    color
   });
   state.map[id] = {
     responsable: "Operación",
@@ -460,6 +464,35 @@ function slugify(value) {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
+}
+
+function normalizeSymbol(value, fallbackName) {
+  const cleaned = String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "")
+    .slice(0, 4);
+  return cleaned || initialsFromName(fallbackName) || "E";
+}
+
+function initialsFromName(name) {
+  const words = String(name || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toUpperCase()
+    .match(/[A-Z0-9]+/g);
+  if (!words?.length) return "";
+  return words
+    .slice(0, 2)
+    .map((word) => word[0])
+    .join("")
+    .slice(0, 4);
+}
+
+function normalizeColor(value, fallback = "#f2c94c") {
+  const color = String(value || "").trim();
+  return /^#[0-9a-f]{6}$/i.test(color) ? color : fallback;
 }
 
 function toggleRecord(collection, id, field, checked) {

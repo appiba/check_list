@@ -884,8 +884,8 @@ textarea {
 }
 
 .event-map-grid {
-  --map-cell: calc(42px * var(--map-zoom));
-  --map-axis: calc(22px * var(--map-zoom));
+  --map-cell: calc(30px * var(--map-zoom));
+  --map-axis: calc(20px * var(--map-zoom));
   position: relative;
   width: calc(var(--map-axis) + (var(--map-cell) * var(--map-cols)) + 16px);
   min-width: calc(var(--map-axis) + (var(--map-cell) * var(--map-cols)) + 16px);
@@ -924,7 +924,7 @@ textarea {
   color: var(--muted-strong);
   background: rgba(5, 7, 10, 0.82);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  font-size: clamp(0.5rem, calc(0.46rem * var(--map-zoom)), 0.68rem);
+  font-size: clamp(0.42rem, calc(0.4rem * var(--map-zoom)), 0.62rem);
   font-weight: 950;
 }
 
@@ -951,7 +951,7 @@ textarea {
   position: absolute;
   top: 3px;
   left: 4px;
-  font-size: clamp(0.45rem, calc(0.42rem * var(--map-zoom)), 0.62rem);
+  font-size: clamp(0.38rem, calc(0.36rem * var(--map-zoom)), 0.54rem);
   font-weight: 900;
 }
 
@@ -968,12 +968,12 @@ textarea {
   display: grid;
   place-items: center;
   padding: 2px;
-  border: 2px solid var(--zone-color, rgba(242, 201, 76, 0.7));
-  border-radius: 5px;
+  border: 1px solid var(--zone-color, rgba(242, 201, 76, 0.7));
+  border-radius: 4px;
   color: var(--text);
   background: rgba(5, 7, 10, 0.82);
   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.32);
-  font-size: clamp(0.54rem, calc(0.58rem * var(--map-zoom)), 0.72rem);
+  font-size: clamp(0.46rem, calc(0.46rem * var(--map-zoom)), 0.62rem);
   font-weight: 900;
   text-align: center;
   text-transform: uppercase;
@@ -1001,9 +1001,9 @@ textarea {
 }
 
 .map-placed-zone .map-symbol {
-  width: min(30px, calc(100% - 6px));
-  height: min(30px, calc(100% - 6px));
-  font-size: clamp(0.52rem, calc(0.5rem * var(--map-zoom)), 0.7rem);
+  width: min(22px, calc(100% - 4px));
+  height: min(22px, calc(100% - 4px));
+  font-size: clamp(0.42rem, calc(0.42rem * var(--map-zoom)), 0.58rem);
 }
 
 .map-placed-zone.active {
@@ -1026,7 +1026,7 @@ textarea {
 .map-create-form {
   grid-column: 1 / -1;
   display: grid;
-  grid-template-columns: minmax(140px, 1.1fr) minmax(110px, 0.75fr) 88px minmax(128px, 0.9fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   align-items: end;
   gap: 8px;
   padding: 10px;
@@ -1042,7 +1042,23 @@ textarea {
 .map-create-form input,
 .map-create-form select,
 .map-create-form button {
+  width: 100%;
+  min-width: 0;
   min-height: 38px;
+}
+
+.map-create-form input[name="name"] {
+  grid-column: span 2;
+}
+
+.map-create-form .map-delete-selected-btn {
+  grid-column: span 2;
+}
+
+.map-create-form .map-color-input {
+  width: 100%;
+  min-width: 0;
+  padding: 2px;
 }
 
 .map-create-form button {
@@ -1056,6 +1072,7 @@ textarea {
   border-color: rgba(255, 77, 79, 0.48);
   color: var(--red);
   background: var(--red-soft);
+  white-space: normal;
 }
 
 @media (max-width: 559px) {

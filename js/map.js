@@ -100,6 +100,8 @@ export function renderMap(state) {
               <option value="fest">Zona</option>
               <option value="police">Policía</option>
             </select>
+            <input type="text" name="symbol" placeholder="Iniciales" maxlength="4" aria-label="Iniciales del elemento">
+            <input class="map-color-input" type="color" name="color" value="#f2c94c" aria-label="Color del elemento">
             <button type="submit">Crear</button>
             <button class="map-delete-selected-btn" type="button" data-action="delete-map-zone" data-id="${escapeHtml(selectedZone.id)}">Eliminar seleccionado</button>
           </form>
@@ -216,7 +218,7 @@ function buildPlacedItem(state, placement, selectedZoneId, selectedPlacementId) 
       data-action="select-map-zone"
       data-id="${escapeHtml(zone.id)}"
       data-placement-id="${escapeHtml(placement.id)}"
-      style="grid-column: ${position.column + 1} / span ${MAP_GRID.itemSpan}; grid-row: ${position.row + 1} / span ${MAP_GRID.itemSpan};"
+      style="${zoneColorStyle(type)} grid-column: ${position.column + 1} / span ${MAP_GRID.itemSpan}; grid-row: ${position.row + 1} / span ${MAP_GRID.itemSpan};"
     >
       <span class="map-symbol">${escapeHtml(type.symbol)}</span>
       <strong>${escapeHtml(compactZoneName(zone.name))}</strong>
@@ -231,7 +233,7 @@ function buildZoneCard(state, zone, selectedZoneId, selectedPlacementId) {
   const placed = placements.filter((placement) => placement.cellId).length;
   const selectedPlacementAttr = zone.id === selectedZoneId && selectedPlacementId ? ` data-placement-id="${escapeHtml(selectedPlacementId)}"` : "";
   return `
-    <div class="zone-button map-zone-card type-${type.className} ${zone.id === selectedZoneId ? "active" : ""}">
+    <div class="zone-button map-zone-card type-${type.className} ${zone.id === selectedZoneId ? "active" : ""}" style="${zoneColorStyle(type)}">
       <button class="map-zone-main" type="button" data-action="select-map-zone" data-id="${escapeHtml(zone.id)}">
         <span class="map-symbol">${escapeHtml(type.symbol)}</span>
         <span>
@@ -280,6 +282,7 @@ function buildPickerOption(state, zone, cellId, selectedZoneId, selectedPlacemen
       data-action="choose-map-zone-for-cell"
       data-id="${escapeHtml(zone.id)}"
       data-cell-id="${escapeHtml(cellId)}"
+      style="${zoneColorStyle(type)}"
     >
       <span class="map-symbol">${escapeHtml(type.symbol)}</span>
       <span>
@@ -326,9 +329,47 @@ function getMapZones(state) {
 
 function zoneType(zone) {
   if (zone.type) {
-    return CUSTOM_ZONE_TYPES[zone.type] || CUSTOM_ZONE_TYPES.default;
+    const baseType = CUSTOM_ZONE_TYPES[zone.type] || CUSTOM_ZONE_TYPES.default;
+    return {
+      ...baseType,
+      symbol: normalizeZoneSymbol(zone.symbol, zone.name, baseType.symbol),
+      color: normalizeZoneColor(zone.color, baseType.color)
+    };
   }
   return ZONE_TYPES[zone.id] || CUSTOM_ZONE_TYPES.default;
+}
+
+function zoneColorStyle(type) {
+  return type.color ? `--zone-color: ${escapeHtml(type.color)};` : "";
+}
+
+function normalizeZoneSymbol(value, fallbackName, fallbackSymbol = "E") {
+  const cleaned = String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "")
+    .slice(0, 4);
+  return cleaned || initialsFromName(fallbackName) || fallbackSymbol;
+}
+
+function initialsFromName(name) {
+  const words = String(name || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toUpperCase()
+    .match(/[A-Z0-9]+/g);
+  if (!words?.length) return "";
+  return words
+    .slice(0, 2)
+    .map((word) => word[0])
+    .join("")
+    .slice(0, 4);
+}
+
+function normalizeZoneColor(value, fallbackColor = "") {
+  const color = String(value || "").trim();
+  return /^#[0-9a-f]{6}$/i.test(color) ? color : fallbackColor;
 }
 
 function parseCell(cellId) {
