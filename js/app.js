@@ -346,31 +346,6 @@ function normalizeMapCell(cellId) {
   return `r${row}-c${column}`;
 }
 
-function nudgeMapPlacement(zoneId, placementId, direction) {
-  if (!state.map?.[zoneId] || !placementId) return;
-
-  ensureMapPlacements(zoneId);
-  const placement = state.map[zoneId].placements.find((item) => item.id === placementId && item.cellId);
-  if (!placement) return;
-
-  const position = mapCellPosition(placement.cellId);
-  const moves = {
-    up: [-1, 0],
-    down: [1, 0],
-    left: [0, -1],
-    right: [0, 1]
-  };
-  const move = moves[direction];
-  if (!move) return;
-
-  const targetRow = Math.min(Math.max(position.row + move[0], 1), MAP_GRID.rows - MAP_GRID.itemSpan + 1);
-  const targetColumn = Math.min(Math.max(position.column + move[1], 1), MAP_GRID.columns - MAP_GRID.itemSpan + 1);
-  const targetCellId = `r${targetRow}-c${targetColumn}`;
-  if (targetCellId === placement.cellId) return;
-
-  moveMapZone(zoneId, targetCellId, placementId);
-}
-
 function isAdjacentMapCell(sourceCellId, targetCellId) {
   const source = mapCellPosition(sourceCellId);
   const target = mapCellPosition(targetCellId);
@@ -655,10 +630,6 @@ app.addEventListener("click", (event) => {
         openMapCellPicker(target.dataset.cellId);
       }
     }
-  }
-
-  if (action === "nudge-map-placement") {
-    nudgeMapPlacement(id, target.dataset.placementId || "", target.dataset.direction || "");
   }
 
   if (action === "choose-map-zone-for-cell") {

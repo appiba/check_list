@@ -81,7 +81,6 @@ export function renderMap(state) {
               ${placements.map((placement) => buildPlacedItem(state, placement, selectedZone.id, selectedPlacementId)).join("")}
             </div>
           </div>
-          ${selectedPlacement ? buildMapMoveControls(selectedZone, selectedPlacement) : ""}
           <p class="map-instruction">Modo colocar: toca un cuadro vacío para elegir elemento. Si hay uno seleccionado, toca un cuadro vecino marcado para moverlo.</p>
         </div>
 
@@ -227,25 +226,6 @@ function buildPlacedItem(state, placement, selectedZoneId, selectedPlacementId) 
       <strong>${escapeHtml(compactZoneName(zone.name))}</strong>
       <span>${escapeHtml(record?.status || "LISTO")}</span>
     </button>
-  `;
-}
-
-function buildMapMoveControls(zone, placement) {
-  return `
-    <div class="map-move-controls" aria-label="Mover elemento seleccionado">
-      <span class="map-move-title">Mover ${escapeHtml(compactZoneName(zone.name))} desde ${escapeHtml(cellLabelFromId(placement.cellId))}</span>
-      <div class="map-nudge-grid">
-        <span></span>
-        <button type="button" data-action="nudge-map-placement" data-id="${escapeHtml(zone.id)}" data-placement-id="${escapeHtml(placement.id)}" data-direction="up" aria-label="Mover arriba">Arriba</button>
-        <span></span>
-        <button type="button" data-action="nudge-map-placement" data-id="${escapeHtml(zone.id)}" data-placement-id="${escapeHtml(placement.id)}" data-direction="left" aria-label="Mover izquierda">Izq.</button>
-        <strong>${escapeHtml(cellLabelFromId(placement.cellId))}</strong>
-        <button type="button" data-action="nudge-map-placement" data-id="${escapeHtml(zone.id)}" data-placement-id="${escapeHtml(placement.id)}" data-direction="right" aria-label="Mover derecha">Der.</button>
-        <span></span>
-        <button type="button" data-action="nudge-map-placement" data-id="${escapeHtml(zone.id)}" data-placement-id="${escapeHtml(placement.id)}" data-direction="down" aria-label="Mover abajo">Abajo</button>
-        <span></span>
-      </div>
-    </div>
   `;
 }
 
