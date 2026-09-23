@@ -38,6 +38,7 @@ export function createDefaultState() {
       message: "Sincronización lista con Google Sheets",
       lastPullAt: "",
       lastPushAt: "",
+      lastRemoteSavedAt: "",
       lastError: ""
     },
     ui: {

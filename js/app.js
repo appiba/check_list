@@ -20,6 +20,12 @@ let bottomNavScrollLeft = 0;
 let centerActiveNavOnRender = true;
 let mapPan = null;
 let suppressNextClick = false;
+let autoPullTimer;
+let autoPullInFlight = false;
+let lastLocalRemoteEditAt = 0;
+
+const AUTO_PULL_INTERVAL_MS = 7000;
+const LOCAL_EDIT_GRACE_MS = 4000;
 
 const NAV_ITEMS = [
   { id: "dashboard", label: "INICIO", short: "INICIO" },
@@ -139,6 +145,9 @@ function syncMapViewport() {
 }
 
 function saveAndRender({ scrollTop = false, remote = false } = {}) {
+  if (remote) {
+    lastLocalRemoteEditAt = Date.now();
+  }
   saveState(state);
   if (remote) {
     queueRemoteSave(state, {
@@ -683,6 +692,9 @@ app.addEventListener("change", (event) => {
       state.sync.status = value ? "configurado" : "local";
       state.sync.message = value ? "URL guardada. Prueba la conexión." : "Sin conexión activa";
       state.sync.lastError = "";
+      if (value) {
+        startAutoPull();
+      }
     }
     saveAndRender({ remote: false });
   }
@@ -692,6 +704,9 @@ app.addEventListener("change", (event) => {
     state.sync.status = value ? "configurado" : "local";
     state.sync.message = value ? "Sincronización activada" : "Sincronización pausada";
     state.sync.lastError = "";
+    if (value) {
+      startAutoPull();
+    }
     saveAndRender({ remote: false });
   }
 
@@ -809,10 +824,12 @@ function setSyncStatus(patch, shouldRender = state.ui.view === "config") {
 }
 
 function handleRemoteSaveSuccess(result = {}) {
+  const savedAt = result.savedAt || new Date().toISOString();
   setSyncStatus({
     status: "online",
     message: "Estado enviado a Google Sheets",
-    lastPushAt: result.savedAt || new Date().toISOString(),
+    lastPushAt: savedAt,
+    lastRemoteSavedAt: savedAt,
     lastError: ""
   });
 }
@@ -854,7 +871,7 @@ async function runSyncPull() {
       }, true);
       return;
     }
-    adoptRemoteState(response.state, "Estado remoto cargado desde Google Sheets");
+    adoptRemoteState(response.state, "Estado remoto cargado desde Google Sheets", response.savedAt);
   } catch (error) {
     handleRemoteError(error);
   }
@@ -876,8 +893,8 @@ async function bootstrapSync() {
     const hasLocalState = Boolean(localStorage.getItem(STORAGE_KEY));
     setSyncStatus({ status: "sincronizando", message: "Sincronizando al iniciar", lastError: "" }, false);
     const response = await pullState(state.sync.webAppUrl);
-    if (response.state && (!hasLocalState || new Date(response.state.meta?.updatedAt || 0) > new Date(state.meta.updatedAt))) {
-      adoptRemoteState(response.state, "Estado remoto más reciente cargado");
+    if (response.state && (!hasLocalState || isRemoteSnapshotNewer(response))) {
+      adoptRemoteState(response.state, "Estado remoto más reciente cargado", response.savedAt);
     } else {
       queueRemoteSave(state, {
         onSuccess: handleRemoteSaveSuccess,
@@ -886,10 +903,57 @@ async function bootstrapSync() {
     }
   } catch (error) {
     handleRemoteError(error);
+  } finally {
+    startAutoPull();
   }
 }
 
-function adoptRemoteState(remoteState, message) {
+function startAutoPull() {
+  if (autoPullTimer) return;
+  autoPullTimer = window.setInterval(autoPullState, AUTO_PULL_INTERVAL_MS);
+  window.addEventListener("focus", autoPullState);
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) autoPullState();
+  });
+}
+
+async function autoPullState() {
+  if (!canSync(state) || autoPullInFlight || document.hidden || isUserEditing()) return;
+  if (Date.now() - lastLocalRemoteEditAt < LOCAL_EDIT_GRACE_MS) return;
+
+  autoPullInFlight = true;
+  try {
+    const response = await pullState(state.sync.webAppUrl);
+    if (response.state && isRemoteSnapshotNewer(response)) {
+      adoptRemoteState(response.state, "Cambios compartidos cargados automáticamente", response.savedAt);
+    }
+  } catch (error) {
+    setSyncStatus({
+      status: "error",
+      message: "No se pudo leer el estado compartido",
+      lastError: error.message
+    }, state.ui.view === "config");
+  } finally {
+    autoPullInFlight = false;
+  }
+}
+
+function isRemoteSnapshotNewer(response = {}) {
+  const remoteSavedAt = response.savedAt || response.state?.sync?.lastRemoteSavedAt || response.state?.meta?.updatedAt || "";
+  const knownRemoteSavedAt = state.sync.lastRemoteSavedAt || "";
+  if (remoteSavedAt && knownRemoteSavedAt) {
+    return new Date(remoteSavedAt) > new Date(knownRemoteSavedAt);
+  }
+  return new Date(response.state?.meta?.updatedAt || 0) > new Date(state.meta.updatedAt || 0);
+}
+
+function isUserEditing() {
+  const active = document.activeElement;
+  if (!active) return false;
+  return Boolean(active.closest?.("input, textarea, select, [contenteditable='true']"));
+}
+
+function adoptRemoteState(remoteState, message, remoteSavedAt = "") {
   const localSync = { ...state.sync };
   const localUi = { ...state.ui };
   state = normalizeState(remoteState);
@@ -899,6 +963,7 @@ function adoptRemoteState(remoteState, message) {
     status: "online",
     message,
     lastPullAt: new Date().toISOString(),
+    lastRemoteSavedAt: remoteSavedAt || remoteState.sync?.lastRemoteSavedAt || remoteState.meta?.updatedAt || localSync.lastRemoteSavedAt || "",
     lastError: ""
   };
   state.ui = {

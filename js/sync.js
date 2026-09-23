@@ -25,6 +25,9 @@ export function getSyncUrl(state) {
 }
 
 export function buildSyncPayload(state) {
+  const deletedMapZoneIds = new Set(state.deletedMapZoneIds || []);
+  const mapZones = [...MAP_ZONES, ...(state.customMapZones || [])].filter((zone) => !deletedMapZoneIds.has(zone.id));
+
   return {
     app: "expo12h-control-center",
     event: EVENT,
@@ -35,7 +38,7 @@ export function buildSyncPayload(state) {
       activations: ACTIVATIONS,
       broadcast: BROADCAST,
       checklist: CHECKLIST,
-      mapZones: [...MAP_ZONES, ...(state.customMapZones || [])],
+      mapZones,
       staff: STAFF,
       team: TEAM,
       timeline: TIMELINE,
