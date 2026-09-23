@@ -51,6 +51,7 @@ export function createDefaultState() {
       incidentFormOpen: false,
       selectedMapZone: "parqueadero-a",
       selectedMapPlacement: "",
+      mapPickerCell: "",
       mapMode: "place",
       mapZoom: 1
     },

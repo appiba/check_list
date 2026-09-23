@@ -36,6 +36,7 @@ export function renderMap(state) {
   const selectedPlacementId = state.ui.selectedMapPlacement || "";
   const selectedPlacedLabel = selectedPlacements.find((placement) => placement.id === selectedPlacementId && placement.cellId)?.cellId;
   const mapMode = state.ui.mapMode === "pan" ? "pan" : "place";
+  const pickerCell = mapMode === "place" ? state.ui.mapPickerCell || "" : "";
   const mapZoom = Number(state.ui.mapZoom || 1);
   const relatedTasks = getRelatedTasks(selectedZone.name);
   const relatedIncidents = state.incidents.filter((incident) => {
@@ -58,7 +59,7 @@ export function renderMap(state) {
           <div class="panel-header map-board-header">
             <div>
               <span class="section-kicker">Cuadrícula operativa</span>
-              <p class="map-help">Selecciona un elemento y toca un cuadro. Cambia a mover mapa para panear con el dedo.</p>
+              <p class="map-help">Toca un cuadro y escoge qué elemento colocar. Cambia a mover mapa para panear con el dedo.</p>
             </div>
             <div class="map-toolbar">
               <div class="map-mode-controls" aria-label="Modo del mapa">
@@ -79,7 +80,7 @@ export function renderMap(state) {
               ${placements.map((placement) => buildPlacedItem(state, placement, selectedZone.id, selectedPlacementId)).join("")}
             </div>
           </div>
-          <p class="map-instruction">Modo colocar: toca un cuadro para ubicar el elemento seleccionado. Modo mover mapa: arrastra la imagen completa para verla mejor.</p>
+          <p class="map-instruction">Modo colocar: toca un cuadro y elige el elemento. Modo mover mapa: arrastra la imagen completa para verla mejor.</p>
         </div>
 
         <div class="map-zone-grid map-zone-list" aria-label="Elementos del mapa">
@@ -167,6 +168,8 @@ export function renderMap(state) {
           <span>Última actualización: ${formatDateTime(selectedRecord.updatedAt)}</span>
         </footer>
       </article>
+
+      ${pickerCell ? buildCellPicker(state, mapZones, pickerCell, selectedZone.id, selectedPlacementId) : ""}
     </section>
   `;
 }
@@ -239,6 +242,52 @@ function buildZoneCard(state, zone, selectedZoneId, selectedPlacementId) {
       <button class="map-remove-btn" type="button" data-action="remove-map-zone" data-id="${escapeHtml(zone.id)}"${selectedPlacementAttr} aria-label="Quitar ${escapeHtml(zone.name)} del mapa">-</button>
       <button class="map-add-btn" type="button" data-action="adjust-map-quantity" data-id="${escapeHtml(zone.id)}" data-delta="1" aria-label="Agregar ${escapeHtml(zone.name)}">+</button>
     </div>
+  `;
+}
+
+function buildCellPicker(state, mapZones, cellId, selectedZoneId, selectedPlacementId) {
+  const cellLabelText = cellLabelFromId(cellId);
+  return `
+    <div class="map-picker-layer" role="presentation">
+      <button class="map-picker-scrim" type="button" data-action="close-map-cell-picker" aria-label="Cerrar selector"></button>
+      <section class="map-cell-picker" role="dialog" aria-modal="true" aria-labelledby="map-picker-title">
+        <div class="map-picker-header">
+          <div>
+            <span class="section-kicker">Colocar en cuadro</span>
+            <h3 id="map-picker-title">${escapeHtml(cellLabelText)}</h3>
+          </div>
+          <button class="mini-action" type="button" data-action="close-map-cell-picker">Cerrar</button>
+        </div>
+        <div class="map-picker-grid">
+          ${mapZones.map((zone) => buildPickerOption(state, zone, cellId, selectedZoneId, selectedPlacementId)).join("")}
+        </div>
+      </section>
+    </div>
+  `;
+}
+
+function buildPickerOption(state, zone, cellId, selectedZoneId, selectedPlacementId) {
+  const type = zoneType(zone);
+  const placements = getZonePlacements(state, zone.id);
+  const placed = placements.filter((placement) => placement.cellId).length;
+  const willMoveSelected = zone.id === selectedZoneId && placements.some((placement) => placement.id === selectedPlacementId && placement.cellId);
+  const actionLabel = willMoveSelected ? "Mover seleccionado aquí" : placements.some((placement) => !placement.cellId) ? "Colocar aquí" : "Agregar y colocar";
+
+  return `
+    <button
+      class="map-picker-option type-${type.className} ${zone.id === selectedZoneId ? "active" : ""}"
+      type="button"
+      data-action="choose-map-zone-for-cell"
+      data-id="${escapeHtml(zone.id)}"
+      data-cell-id="${escapeHtml(cellId)}"
+    >
+      <span class="map-symbol">${escapeHtml(type.symbol)}</span>
+      <span>
+        <strong>${escapeHtml(zone.name)}</strong>
+        <em>${placed}/${placements.length} colocados</em>
+      </span>
+      <small>${escapeHtml(actionLabel)}</small>
+    </button>
   `;
 }
 

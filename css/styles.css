@@ -987,7 +987,8 @@ textarea {
 }
 
 .map-placed-zone .map-symbol,
-.map-zone-card .map-symbol {
+.map-zone-card .map-symbol,
+.map-picker-option .map-symbol {
   width: 26px;
   height: 26px;
   display: inline-grid;
@@ -1103,6 +1104,120 @@ textarea {
   font-size: 0.68rem;
   font-style: normal;
   font-weight: 800;
+}
+
+.map-picker-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: grid;
+  align-items: end;
+  padding: 18px;
+  padding-bottom: calc(94px + env(safe-area-inset-bottom, 0px));
+  pointer-events: none;
+}
+
+.map-picker-scrim {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgba(0, 0, 0, 0.48);
+  pointer-events: auto;
+}
+
+.map-cell-picker {
+  position: relative;
+  width: min(760px, 100%);
+  max-height: min(62vh, 560px);
+  margin: 0 auto;
+  overflow: auto;
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid rgba(242, 201, 76, 0.34);
+  border-radius: var(--radius);
+  background:
+    linear-gradient(135deg, rgba(21, 27, 36, 0.98), rgba(8, 11, 16, 0.98));
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.58);
+  pointer-events: auto;
+}
+
+.map-picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.map-picker-header h3 {
+  margin: 4px 0 0;
+  font-size: 1.35rem;
+}
+
+.map-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(178px, 1fr));
+  gap: 8px;
+}
+
+.map-picker-option {
+  min-width: 0;
+  min-height: 76px;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius);
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.045);
+  text-align: left;
+}
+
+.map-picker-option.active {
+  border-color: rgba(242, 201, 76, 0.62);
+  background: var(--gold-soft);
+}
+
+.map-picker-option span:last-of-type {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.map-picker-option strong {
+  line-height: 1.08;
+  overflow-wrap: anywhere;
+}
+
+.map-picker-option em,
+.map-picker-option small {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.map-picker-option small {
+  grid-column: 2;
+  color: var(--zone-color, var(--gold));
+  text-transform: uppercase;
+}
+
+@media (max-width: 559px) {
+  .map-picker-layer {
+    padding: 10px;
+    padding-bottom: calc(86px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .map-cell-picker {
+    max-height: 58vh;
+  }
+
+  .map-picker-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .map-add-btn,

@@ -187,6 +187,25 @@ function moveMapZone(zoneId, targetCellId, placementId = "") {
   saveAndRender({ remote: true });
 }
 
+function openMapCellPicker(cellId) {
+  if (!cellId) return;
+  state.ui.mapPickerCell = normalizeMapCell(cellId);
+  saveAndRender({ remote: false });
+}
+
+function closeMapCellPicker() {
+  state.ui.mapPickerCell = "";
+  saveAndRender({ remote: false });
+}
+
+function placePickedMapZone(zoneId, targetCellId) {
+  if (!state.map?.[zoneId] || !targetCellId) return;
+  const placement = getMapPlacementForPicker(zoneId);
+  if (!placement) return;
+  state.ui.mapPickerCell = "";
+  moveMapZone(zoneId, targetCellId, placement.id);
+}
+
 function removeMapZone(zoneId, placementId = "") {
   if (!state.map?.[zoneId]) return;
   ensureMapPlacements(zoneId);
@@ -273,6 +292,24 @@ function getMapPlacementForMove(zoneId, placementId) {
   if (unplaced) return unplaced;
   if (placements.length) return placements[placements.length - 1];
   const placement = { id: `${zoneId}-${Date.now()}-1`, cellId: "" };
+  placements.push(placement);
+  state.map[zoneId].quantity = placements.length;
+  return placement;
+}
+
+function getMapPlacementForPicker(zoneId) {
+  ensureMapPlacements(zoneId);
+  const placements = state.map[zoneId].placements;
+
+  if (state.ui.selectedMapZone === zoneId && state.ui.selectedMapPlacement) {
+    const selected = placements.find((placement) => placement.id === state.ui.selectedMapPlacement);
+    if (selected?.cellId) return selected;
+  }
+
+  const unplaced = placements.find((placement) => !placement.cellId);
+  if (unplaced) return unplaced;
+
+  const placement = { id: `${zoneId}-${Date.now()}-${placements.length + 1}`, cellId: "" };
   placements.push(placement);
   state.map[zoneId].quantity = placements.length;
   return placement;
@@ -518,8 +555,16 @@ app.addEventListener("click", (event) => {
 
   if (action === "place-map-zone") {
     if (state.ui.mapMode !== "pan") {
-      moveMapZone(state.ui.selectedMapZone, target.dataset.cellId, state.ui.selectedMapPlacement);
+      openMapCellPicker(target.dataset.cellId);
     }
+  }
+
+  if (action === "choose-map-zone-for-cell") {
+    placePickedMapZone(id, target.dataset.cellId || state.ui.mapPickerCell);
+  }
+
+  if (action === "close-map-cell-picker") {
+    closeMapCellPicker();
   }
 
   if (action === "remove-map-zone") {
@@ -536,6 +581,9 @@ app.addEventListener("click", (event) => {
 
   if (action === "set-map-mode") {
     state.ui.mapMode = target.dataset.mode === "pan" ? "pan" : "place";
+    if (state.ui.mapMode === "pan") {
+      state.ui.mapPickerCell = "";
+    }
     saveAndRender({ remote: false });
   }
 
