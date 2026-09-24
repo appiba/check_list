@@ -5,12 +5,13 @@ import {
   CHECKLIST,
   MAP_ZONES,
   MAP_GRID,
+  MAP_PLAN_VERSION,
   PARKING_PLAN_VERSION,
   STAFF,
   TEAM,
   TIMELINE,
   VEHICLES
-} from "./data.js?v=20260924-parking-v2";
+} from "./data.js?v=20260924-map-v2";
 
 export const STORAGE_KEY = "expo12h-control-center-v1";
 export const DEFAULT_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxdWHR_Am0abA0Sa55dNNVmwF0LJ8bsO7TGcnIpYfovvwRLXx0UWrFJMycNfAfKJXi8/exec";
@@ -25,6 +26,10 @@ const ZONA_FEST_ID = "zona-fest";
 const LEGACY_ZONA_FEST_IDS = ["zona-fest-derecha", "zona-fest-izquierda"];
 const LEGACY_MAP_GRID_COLUMNS = 12;
 const LEGACY_MAP_GRID_ROWS = 12;
+const OFFICIAL_MAP_ZONE_IDS = new Set(MAP_ZONES.map((zone) => zone.id));
+const OFFICIAL_MAP_ZONE_KEYS = new Set(
+  MAP_ZONES.flatMap((zone) => [zone.id, zone.name]).map(normalizeMapZoneKey).filter(Boolean)
+);
 
 export function createDefaultState() {
   return {
@@ -32,6 +37,7 @@ export function createDefaultState() {
       version: 1,
       mapGridColumns: MAP_GRID.columns,
       mapGridRows: MAP_GRID.rows,
+      mapPlanVersion: MAP_PLAN_VERSION,
       parkingPlanVersion: PARKING_PLAN_VERSION,
       createdAt: nowIso(),
       updatedAt: nowIso()
@@ -160,24 +166,40 @@ export function createDefaultState() {
     map: Object.fromEntries(
       MAP_ZONES.map((zone) => [
         zone.id,
-        {
-          responsable: zone.responsable,
-          status: "LISTO",
-          quantity: 1,
-          gridPosition: MAP_GRID.positions[zone.id] || "",
-          placements: [
-            {
-              id: `${zone.id}-1`,
-              cellId: MAP_GRID.positions[zone.id] || ""
-            }
-          ],
-          tasks: "",
-          incident: "",
-          updatedAt: ""
-        }
+        createDefaultMapRecord(zone)
       ])
     )
   };
+}
+
+function createDefaultMapRecord(zone, sourceRecord = {}) {
+  const placements = getDefaultMapPlacements(zone);
+  return {
+    responsable: sourceRecord?.responsable || zone.responsable,
+    status: sourceRecord?.status || "LISTO",
+    quantity: placements.length,
+    gridPosition: placements.find((placement) => placement.cellId)?.cellId || "",
+    placements,
+    tasks: sourceRecord?.tasks || "",
+    incident: sourceRecord?.incident || "",
+    updatedAt: sourceRecord?.updatedAt || ""
+  };
+}
+
+function getDefaultMapPlacements(zone) {
+  const cells = Array.isArray(zone.defaultPlacements)
+    ? [...zone.defaultPlacements]
+    : [MAP_GRID.positions[zone.id] || ""];
+  const requestedQuantity = Math.max(Number.parseInt(zone.defaultQuantity, 10) || 0, cells.length, 1);
+
+  while (cells.length < requestedQuantity) {
+    cells.push("");
+  }
+
+  return cells.slice(0, requestedQuantity).map((cellId, index) => ({
+    id: `${zone.id}-${index + 1}`,
+    cellId: cellId || ""
+  }));
 }
 
 function isPlainObject(value) {
@@ -211,6 +233,7 @@ export function normalizeState(savedState) {
   const migrated = migrateLegacyState(savedState);
   const merged = mergeDefaults(defaults, migrated);
   migrateMapGridSize(merged, migrated);
+  migrateMapPlan(merged, migrated);
   migrateVehicleParkingPlan(merged, migrated);
   if (!merged.sync.webAppUrl) {
     merged.sync.webAppUrl = defaults.sync.webAppUrl;
@@ -324,6 +347,79 @@ function migrateVehicleParkingPlan(state, sourceState = state) {
     parkingPlanVersion: PARKING_PLAN_VERSION,
     needsRemoteSave: meta.needsRemoteSave || !alreadyCurrent
   };
+}
+
+function migrateMapPlan(state, sourceState = state) {
+  if (!isPlainObject(state) || !isPlainObject(state.map)) return;
+
+  const meta = isPlainObject(state.meta) ? state.meta : {};
+  const sourceMeta = isPlainObject(sourceState?.meta) ? sourceState.meta : {};
+  const alreadyCurrent = sourceMeta.mapPlanVersion === MAP_PLAN_VERSION;
+  let changed = false;
+  const duplicateCustomZoneIds = new Set();
+
+  if (Array.isArray(state.customMapZones)) {
+    state.customMapZones = state.customMapZones.filter((zone) => {
+      const duplicate = isOfficialMapZoneDuplicate(zone);
+      if (duplicate) {
+        duplicateCustomZoneIds.add(zone.id);
+        changed = true;
+      }
+      return !duplicate;
+    });
+  } else {
+    state.customMapZones = [];
+    changed = true;
+  }
+
+  if (Array.isArray(state.deletedMapZoneIds)) {
+    const filteredDeleted = state.deletedMapZoneIds.filter((id) => !OFFICIAL_MAP_ZONE_IDS.has(id));
+    changed = changed || filteredDeleted.length !== state.deletedMapZoneIds.length;
+    state.deletedMapZoneIds = filteredDeleted;
+  } else {
+    state.deletedMapZoneIds = [];
+    changed = true;
+  }
+
+  duplicateCustomZoneIds.forEach((id) => {
+    delete state.map[id];
+  });
+
+  if (!alreadyCurrent) {
+    MAP_ZONES.forEach((zone) => {
+      state.map[zone.id] = createDefaultMapRecord(zone, state.map[zone.id]);
+    });
+
+    for (const id of LEGACY_ZONA_FEST_IDS) {
+      delete state.map[id];
+    }
+
+    const visibleZoneIds = new Set([...OFFICIAL_MAP_ZONE_IDS, ...state.customMapZones.map((zone) => zone.id)]);
+    if (isPlainObject(state.ui) && !visibleZoneIds.has(state.ui.selectedMapZone)) {
+      state.ui.selectedMapZone = "parqueadero-a";
+      state.ui.selectedMapPlacement = "";
+    }
+  }
+
+  state.meta = {
+    ...meta,
+    mapPlanVersion: MAP_PLAN_VERSION,
+    needsRemoteSave: meta.needsRemoteSave || changed || !alreadyCurrent
+  };
+}
+
+function isOfficialMapZoneDuplicate(zone = {}) {
+  if (!zone.id || OFFICIAL_MAP_ZONE_IDS.has(zone.id)) return false;
+  const keys = [zone.id, zone.name].map(normalizeMapZoneKey).filter(Boolean);
+  return keys.some((key) => OFFICIAL_MAP_ZONE_KEYS.has(key) || (key === "TRANSITO" && OFFICIAL_MAP_ZONE_KEYS.has("TRANCITO")));
+}
+
+function normalizeMapZoneKey(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "");
 }
 
 function migrateMapGridSize(state, sourceState = state) {

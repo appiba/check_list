@@ -1,5 +1,5 @@
-const CACHE_NAME = "expo12h-control-center-v22";
-const ASSET_VERSION = "20260924-parking-v2";
+const CACHE_NAME = "expo12h-control-center-v24";
+const ASSET_VERSION = "20260924-map-v2";
 const APP_ASSETS = [
   "./",
   "./index.html",

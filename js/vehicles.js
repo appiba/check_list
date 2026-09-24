@@ -1,6 +1,6 @@
-import { PARKING_SPOTS, VEHICLE_CATEGORIES, VEHICLES } from "./data.js?v=20260924-parking-v2";
-import { badge, escapeHtml, formatDateTime, normalize, optionList, percent, progressBar } from "./utils.js?v=20260924-parking-v2";
-import { getVehicleSummary } from "./metrics.js?v=20260924-parking-v2";
+import { PARKING_SPOTS, VEHICLE_CATEGORIES, VEHICLES } from "./data.js?v=20260924-map-v2";
+import { badge, escapeHtml, formatDateTime, normalize, optionList, percent, progressBar } from "./utils.js?v=20260924-map-v2";
+import { getVehicleSummary } from "./metrics.js?v=20260924-map-v2";
 
 const VEHICLE_STEPS = [
   ["llego", "LLEGÓ"],

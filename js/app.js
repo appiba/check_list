@@ -1,17 +1,17 @@
-import { renderActivations } from "./activations.js?v=20260924-parking-v2";
-import { renderBroadcast } from "./broadcast.js?v=20260924-parking-v2";
-import { renderChecklist } from "./checklist.js?v=20260924-parking-v2";
-import { renderConfig } from "./config.js?v=20260924-parking-v2";
-import { renderDashboard } from "./dashboard.js?v=20260924-parking-v2";
-import { EVENT, MAP_GRID, MAP_ZONES } from "./data.js?v=20260924-parking-v2";
-import { renderIncidents } from "./incidents.js?v=20260924-parking-v2";
-import { renderMap } from "./map.js?v=20260924-parking-v2";
-import { resetState, loadState, normalizeState, saveState, STORAGE_KEY, touch } from "./storage.js?v=20260924-parking-v2";
-import { canSync, flushQueuedRemoteSave, pullState, pushState, queueRemoteSave, testConnection } from "./sync.js?v=20260924-parking-v2";
-import { renderTeam } from "./team.js?v=20260924-parking-v2";
-import { renderTimeline } from "./timeline.js?v=20260924-parking-v2";
-import { escapeHtml, getFormValue } from "./utils.js?v=20260924-parking-v2";
-import { renderVehicles } from "./vehicles.js?v=20260924-parking-v2";
+import { renderActivations } from "./activations.js?v=20260924-map-v2";
+import { renderBroadcast } from "./broadcast.js?v=20260924-map-v2";
+import { renderChecklist } from "./checklist.js?v=20260924-map-v2";
+import { renderConfig } from "./config.js?v=20260924-map-v2";
+import { renderDashboard } from "./dashboard.js?v=20260924-map-v2";
+import { EVENT, MAP_GRID, MAP_ZONES } from "./data.js?v=20260924-map-v2";
+import { renderIncidents } from "./incidents.js?v=20260924-map-v2";
+import { renderMap } from "./map.js?v=20260924-map-v2";
+import { resetState, loadState, normalizeState, saveState, STORAGE_KEY, touch } from "./storage.js?v=20260924-map-v2";
+import { canSync, flushQueuedRemoteSave, pullState, pushState, queueRemoteSave, testConnection } from "./sync.js?v=20260924-map-v2";
+import { renderTeam } from "./team.js?v=20260924-map-v2";
+import { renderTimeline } from "./timeline.js?v=20260924-map-v2";
+import { escapeHtml, getFormValue } from "./utils.js?v=20260924-map-v2";
+import { renderVehicles } from "./vehicles.js?v=20260924-map-v2";
 
 const app = document.querySelector("#app");
 let state = loadState();
@@ -24,8 +24,8 @@ let autoPullTimer;
 let autoPullInFlight = false;
 let lastLocalRemoteEditAt = 0;
 
-const AUTO_PULL_INTERVAL_MS = 2000;
-const LOCAL_EDIT_GRACE_MS = 1000;
+const AUTO_PULL_INTERVAL_MS = 1000;
+const LOCAL_EDIT_GRACE_MS = 500;
 
 const NAV_ITEMS = [
   { id: "dashboard", label: "INICIO", short: "INICIO" },

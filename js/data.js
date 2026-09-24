@@ -869,37 +869,109 @@ export const BROADCAST = [
   name
 }));
 
+export const MAP_PLAN_VERSION = "expo-12h-map-layout-v2";
+
+const mapZone = (id, name, responsable, options = {}) => ({
+  id,
+  name,
+  responsable,
+  symbol: options.symbol || "",
+  color: options.color || "",
+  defaultPlacements: options.defaultPlacements || [""],
+  defaultQuantity: options.defaultQuantity || options.defaultPlacements?.length || 1
+});
+
 export const MAP_ZONES = [
-  ["parqueadero-a", "PARQUEADERO A", "Coordinador vehicular"],
-  ["parqueadero-b", "PARQUEADERO B", "Coordinador vehicular"],
-  ["tarima", "TARIMA", "Oskar Baez / DJ Fire"],
-  ["zona-fest", "ZONA FEST", "Martin Gomezjurado"],
-  ["carril-vip", "CARRIL VIP", "Franchesco Guzman"],
-  ["carpas-publico", "CARPAS PÚBLICO", "Franchesco Guzman"],
-  ["pre-grid", "PRE-GRID", "Coordinador vehicular"],
-  ["ingreso-vehiculos", "INGRESO VEHÍCULOS", "Coordinador vehicular"],
-  ["salida-vehiculos", "SALIDA VEHÍCULOS", "Coordinador vehicular"],
-  ["punto-policia", "PUNTO POLICÍA", "Carlos Salazar"],
-  ["seguridad-a", "SEGURIDAD A", "Josue"],
-  ["seguridad-b", "SEGURIDAD B", "Bryan Urbina"]
-].map(([id, name, responsable]) => ({ id, name, responsable }));
+  mapZone("parqueadero-a", "PARQUEADERO A", "Coordinador vehicular", {
+    symbol: "P",
+    color: "#9b87ff",
+    defaultPlacements: ["r8-c8", "r9-c8", "r10-c8", "r11-c7", "r12-c8", "", ""]
+  }),
+  mapZone("parqueadero-b", "PARQUEADERO B", "Coordinador vehicular", {
+    symbol: "P",
+    color: "#9b87ff",
+    defaultPlacements: ["r8-c11", "r9-c11", "r10-c11", "r11-c8", "r12-c11", "", ""]
+  }),
+  mapZone("tarima", "TARIMA", "Oskar Baez / DJ Fire", {
+    symbol: "T",
+    color: "#ffd34f",
+    defaultPlacements: ["r6-c8", "", ""]
+  }),
+  mapZone("zona-fest", "ZONA FEST", "Martin Gomezjurado", {
+    symbol: "ZF",
+    color: "#ff4d9d",
+    defaultPlacements: ["r4-c7", "r5-c7", "r6-c7", "", "", ""]
+  }),
+  mapZone("carril-vip", "CARRIL VIP", "Franchesco Guzman", {
+    symbol: "VIP",
+    color: "#ff9f1c",
+    defaultPlacements: ["r7-c9"]
+  }),
+  mapZone("carpas-publico", "CARPAS PÚBLICO", "Franchesco Guzman", {
+    symbol: "C",
+    color: "#35d07f",
+    defaultPlacements: ["", ""]
+  }),
+  mapZone("pre-grid", "PRE-GRID", "Coordinador vehicular", {
+    symbol: "G",
+    color: "#00d5ff",
+    defaultPlacements: ["r10-c9", "r10-c10"]
+  }),
+  mapZone("ingreso-vehiculos", "INGRESO VEHÍCULOS", "Coordinador vehicular", {
+    symbol: "IN",
+    color: "#f1f5f9",
+    defaultPlacements: ["r14-c4", ""]
+  }),
+  mapZone("salida-vehiculos", "SALIDA VEHÍCULOS", "Coordinador vehicular", {
+    symbol: "OUT",
+    color: "#f1f5f9",
+    defaultPlacements: ["r11-c12", "r15-c5", ""]
+  }),
+  mapZone("punto-policia", "PUNTO POLICÍA", "Carlos Salazar", {
+    symbol: "POL",
+    color: "#ff4d4f",
+    defaultPlacements: ["r7-c7", "r13-c11", ""]
+  }),
+  mapZone("seguridad-a", "SEGURIDAD A", "Josue", {
+    symbol: "S",
+    color: "#4aa3ff",
+    defaultPlacements: ["r8-c7", "", ""]
+  }),
+  mapZone("seguridad-b", "SEGURIDAD B", "Bryan Urbina", {
+    symbol: "S",
+    color: "#4aa3ff",
+    defaultPlacements: ["r7-c10", "r12-c7", "r12-c12", ""]
+  }),
+  mapZone("auspiciantes", "AUSPICIANTES", "Operación", {
+    symbol: "BTL",
+    color: "#26ff4b",
+    defaultPlacements: ["r6-c9", "r6-c10", "r9-c6", "r10-c6", "r11-c6"]
+  }),
+  mapZone("wincha", "WINCHA", "Operación", {
+    symbol: "WCH",
+    color: "#25d7ff",
+    defaultPlacements: ["r11-c4", "r12-c3", "r12-c4"]
+  }),
+  mapZone("municipales", "MUNICIPALES", "Operación", {
+    symbol: "GAD",
+    color: "#3430df",
+    defaultPlacements: ["r7-c8", "r7-c11", "r9-c7", "r11-c11", "r13-c8", "", "", "", "", ""]
+  }),
+  mapZone("trancito", "TRANCITO", "Operación", {
+    symbol: "TRA",
+    color: "#27f12f",
+    defaultPlacements: ["r13-c13", "r14-c13"]
+  }),
+  mapZone("marcas", "MARCAS", "Operación", {
+    symbol: "M",
+    color: "#ffd34f",
+    defaultPlacements: ["r10-c5", "r11-c5"]
+  })
+];
 
 export const MAP_GRID = {
   columns: 17,
   rows: 17,
   itemSpan: 1,
-  positions: {
-    "parqueadero-a": "r1-c9",
-    "parqueadero-b": "r3-c9",
-    tarima: "r5-c5",
-    "punto-policia": "r3-c11",
-    "zona-fest": "r7-c8",
-    "carril-vip": "r9-c9",
-    "carpas-publico": "r7-c3",
-    "pre-grid": "r9-c5",
-    "ingreso-vehiculos": "r11-c1",
-    "salida-vehiculos": "r11-c3",
-    "seguridad-a": "r3-c3",
-    "seguridad-b": "r5-c7"
-  }
+  positions: Object.fromEntries(MAP_ZONES.map((zone) => [zone.id, zone.defaultPlacements.find(Boolean) || ""]))
 };

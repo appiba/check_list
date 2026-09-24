@@ -1,6 +1,6 @@
-import { EVENT } from "./data.js?v=20260924-parking-v2";
-import { STORAGE_KEY } from "./storage.js?v=20260924-parking-v2";
-import { escapeHtml, formatDateTime } from "./utils.js?v=20260924-parking-v2";
+import { EVENT } from "./data.js?v=20260924-map-v2";
+import { STORAGE_KEY } from "./storage.js?v=20260924-map-v2";
+import { escapeHtml, formatDateTime } from "./utils.js?v=20260924-map-v2";
 
 export function renderConfig(state) {
   return `

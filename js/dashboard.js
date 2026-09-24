@@ -1,4 +1,4 @@
-import { EVENT } from "./data.js?v=20260924-parking-v2";
+import { EVENT } from "./data.js?v=20260924-map-v2";
 import {
   getActivationSummary,
   getAreaSummaries,
@@ -7,8 +7,8 @@ import {
   getIncidentSummary,
   getOverallProgress,
   getVehicleSummary
-} from "./metrics.js?v=20260924-parking-v2";
-import { badge, escapeHtml, progressBar } from "./utils.js?v=20260924-parking-v2";
+} from "./metrics.js?v=20260924-map-v2";
+import { badge, escapeHtml, progressBar } from "./utils.js?v=20260924-map-v2";
 
 export function renderDashboard(state) {
   const checklist = getChecklistSummary(state);

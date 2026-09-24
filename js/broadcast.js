@@ -1,6 +1,6 @@
-import { BROADCAST, STATUS } from "./data.js?v=20260924-parking-v2";
-import { badge, escapeHtml, formatDateTime, optionList, progressBar } from "./utils.js?v=20260924-parking-v2";
-import { getBroadcastSummary } from "./metrics.js?v=20260924-parking-v2";
+import { BROADCAST, STATUS } from "./data.js?v=20260924-map-v2";
+import { badge, escapeHtml, formatDateTime, optionList, progressBar } from "./utils.js?v=20260924-map-v2";
+import { getBroadcastSummary } from "./metrics.js?v=20260924-map-v2";
 
 export function renderBroadcast(state) {
   const summary = getBroadcastSummary(state);

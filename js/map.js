@@ -1,5 +1,5 @@
-import { CHECKLIST, MAP_GRID, MAP_ZONES } from "./data.js?v=20260924-parking-v2";
-import { badge, escapeHtml, formatDateTime, optionList } from "./utils.js?v=20260924-parking-v2";
+import { CHECKLIST, MAP_GRID, MAP_ZONES } from "./data.js?v=20260924-map-v2";
+import { badge, escapeHtml, formatDateTime, optionList } from "./utils.js?v=20260924-map-v2";
 
 const ZONE_TYPES = {
   "parqueadero-a": { className: "vehicle", symbol: "P", label: "Parqueadero" },
@@ -13,7 +13,12 @@ const ZONE_TYPES = {
   "salida-vehiculos": { className: "access", symbol: "OUT", label: "Salida" },
   "punto-policia": { className: "police", symbol: "POL", label: "Policia" },
   "seguridad-a": { className: "security", symbol: "S", label: "Seguridad" },
-  "seguridad-b": { className: "security", symbol: "S", label: "Seguridad" }
+  "seguridad-b": { className: "security", symbol: "S", label: "Seguridad" },
+  auspiciantes: { className: "sponsor", symbol: "BTL", label: "Auspiciantes" },
+  wincha: { className: "winch", symbol: "WCH", label: "Wincha" },
+  municipales: { className: "municipal", symbol: "GAD", label: "Municipales" },
+  trancito: { className: "traffic", symbol: "TRA", label: "Trancito" },
+  marcas: { className: "brand", symbol: "M", label: "Marcas" }
 };
 
 const CUSTOM_ZONE_TYPES = {
@@ -330,15 +335,15 @@ function getMapZones(state) {
 }
 
 function zoneType(zone) {
-  if (zone.type) {
-    const baseType = CUSTOM_ZONE_TYPES[zone.type] || CUSTOM_ZONE_TYPES.default;
-    return {
-      ...baseType,
-      symbol: normalizeZoneSymbol(zone.symbol, zone.name, baseType.symbol),
-      color: normalizeZoneColor(zone.color, baseType.color)
-    };
-  }
-  return ZONE_TYPES[zone.id] || CUSTOM_ZONE_TYPES.default;
+  const baseType = zone.type
+    ? CUSTOM_ZONE_TYPES[zone.type] || CUSTOM_ZONE_TYPES.default
+    : ZONE_TYPES[zone.id] || CUSTOM_ZONE_TYPES.default;
+
+  return {
+    ...baseType,
+    symbol: normalizeZoneSymbol(zone.symbol, zone.name, baseType.symbol),
+    color: normalizeZoneColor(zone.color, baseType.color)
+  };
 }
 
 function zoneColorStyle(type) {
