@@ -28,12 +28,16 @@ export function getSyncUrl(state) {
 export function buildSyncPayload(state) {
   const deletedMapZoneIds = new Set(state.deletedMapZoneIds || []);
   const mapZones = [...MAP_ZONES, ...(state.customMapZones || [])].filter((zone) => !deletedMapZoneIds.has(zone.id));
+  const statePayload = JSON.parse(JSON.stringify(state));
+  if (statePayload.meta) {
+    delete statePayload.meta.needsRemoteSave;
+  }
 
   return {
     app: "expo12h-control-center",
     event: EVENT,
     sentAt: new Date().toISOString(),
-    state,
+    state: statePayload,
     catalog: {
       activationControls: ACTIVATION_CONTROLS,
       activations: ACTIVATIONS,

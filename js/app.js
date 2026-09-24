@@ -726,11 +726,29 @@ app.addEventListener("input", (event) => {
   const field = target.dataset.field;
   if (!["vehicleSearch", "activationSearch"].includes(field)) return;
 
+  const selectionStart = target.selectionStart;
+  const selectionEnd = target.selectionEnd;
   state.ui[field] = target.value;
   saveState(state);
   clearTimeout(searchRenderTimer);
-  searchRenderTimer = setTimeout(render, 250);
+  searchRenderTimer = setTimeout(() => {
+    render();
+    restoreSearchFocus(field, selectionStart, selectionEnd);
+  }, 120);
 });
+
+function restoreSearchFocus(field, selectionStart, selectionEnd) {
+  window.requestAnimationFrame(() => {
+    const input = app.querySelector(`[data-action="set-ui-field"][data-field="${field}"]`);
+    if (!(input instanceof HTMLInputElement)) return;
+
+    const end = input.value.length;
+    const start = Number.isInteger(selectionStart) ? Math.min(selectionStart, end) : end;
+    const finish = Number.isInteger(selectionEnd) ? Math.min(selectionEnd, end) : start;
+    input.focus({ preventScroll: true });
+    input.setSelectionRange?.(start, finish);
+  });
+}
 
 app.addEventListener("change", (event) => {
   const target = event.target;
@@ -1028,6 +1046,8 @@ function adoptRemoteState(remoteState, message, remoteSavedAt = "") {
   const localSync = { ...state.sync };
   const localUi = { ...state.ui };
   state = normalizeState(remoteState);
+  const shouldSaveMigratedRemote = Boolean(state.meta.needsRemoteSave);
+  delete state.meta.needsRemoteSave;
   state.sync = {
     ...state.sync,
     ...localSync,
@@ -1042,5 +1062,12 @@ function adoptRemoteState(remoteState, message, remoteSavedAt = "") {
     ...localUi
   };
   saveState(state);
+  if (shouldSaveMigratedRemote) {
+    lastLocalRemoteEditAt = Date.now();
+    queueRemoteSave(state, {
+      onSuccess: handleRemoteSaveSuccess,
+      onError: handleRemoteError
+    });
+  }
   render();
 }

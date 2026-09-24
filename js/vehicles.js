@@ -17,10 +17,10 @@ export function renderVehicles(state) {
   const vehicles = VEHICLES.filter((vehicle) => {
     const record = state.vehicles[vehicle.id] || {};
     const haystack = normalize(
-      `${vehicle.numeroAuto} ${vehicle.pilotoPrincipal} ${vehicle.categoria} ${vehicle.marca} ${vehicle.modelo} ${vehicle.ciudad}`
+      `${vehicle.numeroAuto} ${vehicle.pilotoPrincipal} ${vehicle.categoria} ${vehicle.marca} ${vehicle.modelo} ${vehicle.ciudad} ${vehicle.parkingSpot} ${record.puesto} ${record.parqueadero}`
     );
     return (!query || haystack.includes(query)) && (category === "todas" || vehicle.categoria === category);
-  });
+  }).sort(compareVehiclesByParking);
 
   return `
     <section class="screen" aria-labelledby="vehicles-title">
@@ -53,21 +53,35 @@ export function renderVehicles(state) {
       </article>
 
       <div class="vehicle-grid">
-        ${vehicles.map((vehicle) => renderVehicleCard(vehicle, state.vehicles[vehicle.id])).join("")}
+        ${vehicles.map((vehicle) => renderVehicleCard(vehicle, state.vehicles[vehicle.id] || {})).join("")}
       </div>
     </section>
   `;
 }
 
+function compareVehiclesByParking(a, b) {
+  return parkingSortValue(a) - parkingSortValue(b);
+}
+
+function parkingSortValue(vehicle) {
+  const spot = vehicle.parkingSpot || "";
+  const group = spot[0] === "A" ? 0 : spot[0] === "B" ? 1 : 2;
+  const number = Number.parseInt(spot.slice(1), 10) || 999;
+  return group * 100 + number;
+}
+
 function renderVehicleCard(vehicle, record) {
-  const completedSteps = VEHICLE_STEPS.filter(([key]) => record[key]).length + (record.parqueadero !== "SIN ASIGNAR" ? 1 : 0);
+  const hasParking = Boolean(record.parqueadero && record.parqueadero !== "SIN ASIGNAR");
+  const completedSteps = VEHICLE_STEPS.filter(([key]) => record[key]).length + (hasParking ? 1 : 0);
   const cardPercent = percent(completedSteps, VEHICLE_STEPS.length + 1);
   const spots = ["", ...PARKING_SPOTS.A, ...PARKING_SPOTS.B];
+  const spotLabel = record.puesto || vehicle.parkingSpot || "SIN PUESTO";
 
   return `
     <article class="vehicle-card">
       <div class="vehicle-header">
         <span class="vehicle-number">#${escapeHtml(vehicle.numeroAuto)}</span>
+        <span class="parking-chip">${escapeHtml(spotLabel)}</span>
         ${badge(vehicle.categoria, "info")}
       </div>
       <h3>${escapeHtml(`${vehicle.marca} ${vehicle.modelo}`)}</h3>

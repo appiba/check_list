@@ -41,6 +41,8 @@ export const PARKING_SPOTS = {
   B: Array.from({ length: 29 }, (_, index) => `B${String(index + 1).padStart(2, "0")}`)
 };
 
+export const PARKING_PLAN_VERSION = "expo-12h-parqueadero-pdf-v2";
+
 export const CHECKLIST_AREAS = [
   "Dirección",
   "Operación",
@@ -602,8 +604,20 @@ export const TIMELINE = [
   }
 ];
 
-const vehicle = (numeroAuto, categoria, auto, pilotoPrincipal, ciudad = "POR CONFIRMAR") => {
+const normalizeParkingSpot = (spot = "") => {
+  const match = String(spot).trim().toUpperCase().match(/^([AB])0?(\d{1,2})$/);
+  if (!match) return "";
+  return `${match[1]}${String(Number(match[2])).padStart(2, "0")}`;
+};
+
+const parkingGroupFromSpot = (spot = "") => {
+  const normalizedSpot = normalizeParkingSpot(spot);
+  return normalizedSpot ? normalizedSpot[0] : "SIN ASIGNAR";
+};
+
+const vehicle = (numeroAuto, categoria, auto, pilotoPrincipal, ciudad = "POR CONFIRMAR", parkingSpot = "") => {
   const [marca, ...modelParts] = auto.split(" ");
+  const normalizedParkingSpot = normalizeParkingSpot(parkingSpot);
   return {
     id: `auto-${numeroAuto}`,
     numeroAuto: String(numeroAuto),
@@ -612,6 +626,8 @@ const vehicle = (numeroAuto, categoria, auto, pilotoPrincipal, ciudad = "POR CON
     modelo: modelParts.join(" "),
     pilotoPrincipal,
     ciudad,
+    parkingGroup: parkingGroupFromSpot(normalizedParkingSpot),
+    parkingSpot: normalizedParkingSpot,
     alternante1: "",
     alternante2: "",
     alternante3: "",
@@ -620,64 +636,64 @@ const vehicle = (numeroAuto, categoria, auto, pilotoPrincipal, ciudad = "POR CON
 };
 
 export const VEHICLES = [
-  vehicle(3, "PROTO P1", "RADICAL SR3", "Mauricio Moncayo Munive"),
-  vehicle(21, "PROTO P1", "TOMISTER RP1", "Luis Videla"),
-  vehicle(69, "PROTO P1", "JEC VAN DIEMEN", "Andres Serrano Velasco"),
-  vehicle(90, "PROTO P1", "LIGER LMP3", "Mateo Villagomez"),
-  vehicle(96, "PROTO P1", "RADICAL SR3", "Abigail Ron Portilla"),
-  vehicle(99, "PROTO P1", "RADICAL PR6", "Xavier Villagomez Vera"),
-  vehicle(104, "GRAN TURISMO", "VW GTI", "Leonardo Armas Guaranga"),
-  vehicle(113, "GRAN TURISMO", "BMW 330i", "Juan Pablo Carrera Manciati"),
-  vehicle(171, "GRAN TURISMO", "RENAULT CLIO", "Juan Botteri Perez"),
-  vehicle(185, "GRAN TURISMO", "RENAULT CLIO", "Marcelo Lopez"),
-  vehicle(193, "GRAN TURISMO", "BMW 525i", "Jorge Murillo Segura"),
-  vehicle(199, "GRAN TURISMO", "AUDI TT", "Carlos Salazar Quelal", "IBARRA"),
-  vehicle(214, "TC 2000", "HONDA CIVIC", "Jose Morejon Albuja"),
-  vehicle(220, "TC 2000", "OPEL CORSA", "Matias Salvador Burneo"),
-  vehicle(223, "TC 2000", "HONDA CIVIC", "Diego Moran"),
-  vehicle(226, "TC 2000", "KIA CERATO KOUP", "Juan David García Manrique"),
-  vehicle(237, "TC 2000", "SCION FRS", "Diego Redin"),
-  vehicle(244, "TC 2000", "OPEL CORSA", "Mateo Monroy"),
-  vehicle(247, "TC 2000", "OPEL CORSA", "Fernando Sandoval"),
-  vehicle(252, "TC 2000", "HONDA CIVIC", "Dario Navarro"),
-  vehicle(267, "TC 2000", "OPEL CORSA", "Martin Suarez Gross"),
-  vehicle(274, "TC 2000", "HONDA CIVIC", "Luis Saurith"),
-  vehicle(282, "TC 2000", "HONDA INTEGRA", "Omar Sarango Lopez"),
-  vehicle(299, "TC 2000", "HONDA CIVIC", "Fernando Iza Felix"),
-  vehicle(310, "TC 1600 PRO", "NISSAN SENTRA B13", "Joffre Armas Guaranga"),
-  vehicle(315, "TC 1600 PRO", "TOYOTA YARIS", "Patricio Zevallos Lopez"),
-  vehicle(332, "TC 1600 PRO", "HONDA CIVIC", "Christian Estevez Jimenez"),
-  vehicle(335, "TC 1600 PRO", "NISSAN MARCH", "Luis Cordero Goyes"),
-  vehicle(363, "TC 1600 PRO", "NISSAN MARCH", "Ruben Carrera Fuertes"),
-  vehicle(377, "TC 1600 PRO", "DATSUN 1200", "Jose Peñafiel"),
-  vehicle(393, "TC 1600 PRO", "SUZUKI FORSA", "Eduardo Montalvo Zambrano"),
-  vehicle(395, "TC 1600 PRO", "HONDA CIVIC", "Mateo Novoa Perez"),
-  vehicle(422, "TC LIGHT", "HYUNDAI GRAND I10", "Santiago Inclan Luna"),
-  vehicle(440, "TC LIGHT", "SUZUKI FORSA", "Andres Redin Escobar"),
-  vehicle(444, "TC LIGHT", "HYUNDAI GRAND I10", "Daniel Gonzalez Alvarez"),
-  vehicle(454, "TC LIGHT", "HYUNDAI I10", "Edison Pozo Villafuerte"),
-  vehicle(486, "TC LIGHT", "KIA PICANTO", "Martin Salazar Rivera"),
-  vehicle(616, "OPEN", "SUBARU WRX", "Jose Valarezo Sanchez"),
-  vehicle(618, "OPEN", "BMW E36", "Christian Ortiz Van Hecke"),
-  vehicle(624, "OPEN", "PORSCHE 911", "Patricio Avellan Acosta"),
-  vehicle(629, "OPEN", "BMW E90 335i", "Reinaldo Puma Venegas"),
-  vehicle(661, "OPEN", "RENAULT CLIO", "Mateo Ayala"),
-  vehicle(663, "OPEN", "FIAT ABARTH", "Patricio Larrea Angelescu"),
-  vehicle(677, "OPEN", "TOYOTA GT 86", "Pedro Hernandez Hernandez"),
-  vehicle(688, "OPEN", "BMW 360i", "Paulo Coronel Rojas"),
-  vehicle(701, "TC ELITE", "RENAULT LOGAN", "Juan Felipe Pedraza"),
-  vehicle(711, "TC ELITE", "NISSAN MARCH", "Fernando Fuertes Calva"),
-  vehicle(717, "TC ELITE", "NISSAN MARCH", "Felipe Lopez Trujillo"),
-  vehicle(727, "TC ELITE", "NISSAN MARCH", "Leonidas Drouet"),
-  vehicle(729, "TC ELITE", "VW POLO", "Camila Espinosa Coronado"),
-  vehicle(748, "TC ELITE", "NISSAN MARCH", "Juan Pablo Montenegro"),
-  vehicle(752, "TC ELITE", "KIA RIO", "Juan Esteban Cornejo"),
-  vehicle(755, "TC ELITE", "NISSAN MARCH", "Jose Roberto Murillo Venegas"),
-  vehicle(764, "TC ELITE", "KIA RIO", "Juan Carlos Navas"),
-  vehicle(777, "TC ELITE", "NISSAN MARCH", "Domenika Arellano Soria"),
-  vehicle(789, "TC ELITE", "NISSAN MARCH", "Paolo Zani"),
-  vehicle(797, "TC ELITE", "NISSAN MARCH", "Jose Woodcock Ortiz"),
-  vehicle(825, "MASTER +60", "AUDI 80", "Juan Jorge Villota Trasversari")
+  vehicle(3, "PROTO P1", "RADICAL SR3", "Mauricio Moncayo Munive", "QUITO", "A1"),
+  vehicle(21, "PROTO P1", "TOMISTER RP1", "Luis Videla", "QUITO", "A2"),
+  vehicle(69, "PROTO P1", "JEC VAN DIEMEN", "Andres Serrano Velasco", "EEUU", "A3"),
+  vehicle(618, "OPEN", "BMW E36", "Christian Ortiz Van Hecke", "IBARRA", "A4"),
+  vehicle(661, "OPEN", "RENAULT CLIO", "Mateo Ayala", "QUITO", "A5"),
+  vehicle(663, "OPEN", "FIAT ABARTH", "Patricio Larrea Angelescu", "QUITO", "A6"),
+  vehicle(688, "OPEN", "BMW 360i", "Paulo Coronel Rojas", "LOJA", "A7"),
+  vehicle(104, "GRAN TURISMO", "VW GTI", "Leonardo Armas Guaranga", "QUITO", "A8"),
+  vehicle(171, "GRAN TURISMO", "RENAULT CLIO", "Juan Botteri Perez", "QUITO", "A9"),
+  vehicle(185, "GRAN TURISMO", "RENAULT CLIO", "Marcelo Lopez", "QUITO", "A10"),
+  vehicle(220, "TC 2000", "OPEL CORSA", "Matias Salvador Burneo", "QUITO", "A11"),
+  vehicle(226, "TC 2000", "KIA CERATO KOUP", "Juan David García Manrique", "BOGOTA COLOMBIA", "A12"),
+  vehicle(247, "TC 2000", "OPEL CORSA", "Fernando Sandoval", "QUITO", "A13"),
+  vehicle(274, "TC 2000", "HONDA CIVIC", "Luis Saurith", "BOGOTA COLOMBIA", "A14"),
+  vehicle(299, "TC 2000", "HONDA CIVIC", "Fernando Iza Felix", "QUITO", "A15"),
+  vehicle(310, "TC 1600 PRO", "NISSAN SENTRA B13", "Joffre Armas Guaranga", "QUITO", "A16"),
+  vehicle(315, "TC 1600 PRO", "TOYOTA YARIS", "Patricio Zevallos Lopez", "QUITO", "A17"),
+  vehicle(332, "TC 1600 PRO", "HONDA CIVIC", "Christian Estevez Jimenez", "QUITO", "A18"),
+  vehicle(335, "TC 1600 PRO", "NISSAN MARCH", "Luis Cordero Goyes", "IPIALES COLOMBIA", "A19"),
+  vehicle(363, "TC 1600 PRO", "NISSAN MARCH", "Ruben Carrera Fuertes", "IPIALES COLOMBIA", "A20"),
+  vehicle(377, "TC 1600 PRO", "DATSUN 1200", "Jose Peñafiel", "QUITO", "A21"),
+  vehicle(393, "TC 1600 PRO", "SUZUKI FORSA", "Eduardo Montalvo Zambrano", "QUITO", "A22"),
+  vehicle(395, "TC 1600 PRO", "HONDA CIVIC", "Mateo Novoa Perez", "QUITO", "A23"),
+  vehicle(701, "TC ELITE", "RENAULT LOGAN", "Juan Felipe Pedraza", "BOGOTA COLOMBIA", "A24"),
+  vehicle(711, "TC ELITE", "NISSAN MARCH", "Fernando Fuertes Calva", "QUITO", "A25"),
+  vehicle(717, "TC ELITE", "NISSAN MARCH", "Felipe Lopez Trujillo", "QUITO", "A26"),
+  vehicle(748, "TC ELITE", "NISSAN MARCH", "Juan Pablo Montenegro", "TULCAN", "A27"),
+  vehicle(752, "TC ELITE", "KIA RIO", "Juan Esteban Cornejo", "QUITO", "A28"),
+  vehicle(755, "TC ELITE", "NISSAN MARCH", "Jose Roberto Murillo Venegas", "ESMERALDA", "A29"),
+  vehicle(90, "PROTO P1", "LIGER LMP3", "Mateo Villagomez", "QUITO", "B1"),
+  vehicle(96, "PROTO P1", "RADICAL SR3", "Abigail Ron Portilla", "QUITO", "B2"),
+  vehicle(99, "PROTO P1", "RADICAL PR6", "Xavier Villagomez Vera", "QUITO", "B3"),
+  vehicle(199, "GRAN TURISMO", "AUDI TT", "Carlos Salazar Quelal", "IBARRA", "B4"),
+  vehicle(624, "OPEN", "PORSCHE 911", "Patricio Avellan Acosta", "QUITO", "B5"),
+  vehicle(729, "TC ELITE", "VW POLO", "Camila Espinosa Coronado", "QUITO", "B6"),
+  vehicle(777, "TC ELITE", "NISSAN MARCH", "Domenika Arellano Soria", "QUITO", "B7"),
+  vehicle(267, "TC 2000", "OPEL CORSA", "Martin Suarez Gross", "QUITO", "B8"),
+  vehicle(616, "OPEN", "SUBARU WRX", "Jose Valarezo Sanchez", "GYE", "B9"),
+  vehicle(629, "OPEN", "BMW E90 335i", "Reinaldo Puma Venegas", "QUITO", "B10"),
+  vehicle(677, "OPEN", "TOYOTA GT 86", "Pedro Hernandez Hernandez", "MEXICO", "B11"),
+  vehicle(113, "GRAN TURISMO", "BMW 330i", "Juan Pablo Carrera Manciati", "QUITO", "B12"),
+  vehicle(155, "GRAN TURISMO", "HYUNDAI GENESIS", "Felipe Ponce", "QUITO", "B13"),
+  vehicle(193, "GRAN TURISMO", "BMW 525i", "Jorge Murillo Segura", "QUITO", "B14"),
+  vehicle(223, "TC 2000", "HONDA CIVIC", "Diego Moran", "IBARRA", "B15"),
+  vehicle(282, "TC 2000", "HONDA INTEGRA", "Omar Sarango Lopez", "IBARRA", "B16"),
+  vehicle(214, "TC 2000", "HONDA CIVIC", "Jose Morejon Albuja", "IBARRA", "B17"),
+  vehicle(237, "TC 2000", "SCION FRS", "Diego Redin", "QUITO", "B18"),
+  vehicle(244, "TC 2000", "OPEL CORSA", "Mateo Monroy", "QUITO", "B19"),
+  vehicle(727, "TC ELITE", "NISSAN MARCH", "Leonidas Drouet", "GYE", "B20"),
+  vehicle(764, "TC ELITE", "KIA RIO", "Juan Carlos Navas", "AMBATO", "B21"),
+  vehicle(789, "TC ELITE", "NISSAN MARCH", "Paolo Zani", "PERU", "B22"),
+  vehicle(797, "TC ELITE", "NISSAN MARCH", "Jose Woodcock Ortiz", "PASTO COLOMBIA", "B23"),
+  vehicle(422, "TC LIGHT", "HYUNDAI GRAND I10", "Santiago Inclan Luna", "LAGO AGRIO", "B24"),
+  vehicle(440, "TC LIGHT", "SUZUKI FORSA", "Andres Redin Escobar", "QUITO", "B25"),
+  vehicle(444, "TC LIGHT", "HYUNDAI GRAND I10", "Daniel Gonzalez Alvarez", "AZOGUES", "B26"),
+  vehicle(454, "TC LIGHT", "HYUNDAI I10", "Edison Pozo Villafuerte", "PELILEO", "B27"),
+  vehicle(486, "TC LIGHT", "KIA PICANTO", "Martin Salazar Rivera", "CUENCA", "B28"),
+  vehicle(825, "MASTER +60", "AUDI 80", "Juan Jorge Villota Trasversari", "QUITO", "B29")
 ];
 
 export const VEHICLE_CATEGORIES = [

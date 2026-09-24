@@ -5,6 +5,7 @@ import {
   CHECKLIST,
   MAP_ZONES,
   MAP_GRID,
+  PARKING_PLAN_VERSION,
   STAFF,
   TEAM,
   TIMELINE,
@@ -31,6 +32,7 @@ export function createDefaultState() {
       version: 1,
       mapGridColumns: MAP_GRID.columns,
       mapGridRows: MAP_GRID.rows,
+      parkingPlanVersion: PARKING_PLAN_VERSION,
       createdAt: nowIso(),
       updatedAt: nowIso()
     },
@@ -92,8 +94,8 @@ export function createDefaultState() {
           horaLlegada: "",
           revision: false,
           estadoRevision: "PENDIENTE",
-          parqueadero: "SIN ASIGNAR",
-          puesto: "",
+          parqueadero: vehicle.parkingGroup || "SIN ASIGNAR",
+          puesto: vehicle.parkingSpot || "",
           preGrid: false,
           presentado: false,
           horaPresentacion: "",
@@ -209,6 +211,7 @@ export function normalizeState(savedState) {
   const migrated = migrateLegacyState(savedState);
   const merged = mergeDefaults(defaults, migrated);
   migrateMapGridSize(merged, migrated);
+  migrateVehicleParkingPlan(merged, migrated);
   if (!merged.sync.webAppUrl) {
     merged.sync.webAppUrl = defaults.sync.webAppUrl;
   }
@@ -300,6 +303,29 @@ function migrateZonaFestMap(state) {
   }
 }
 
+function migrateVehicleParkingPlan(state, sourceState = state) {
+  if (!isPlainObject(state) || !isPlainObject(state.vehicles)) return;
+
+  const meta = isPlainObject(state.meta) ? state.meta : {};
+  const sourceMeta = isPlainObject(sourceState?.meta) ? sourceState.meta : {};
+  const alreadyCurrent = sourceMeta.parkingPlanVersion === PARKING_PLAN_VERSION;
+
+  if (!alreadyCurrent) {
+    VEHICLES.forEach((vehicle) => {
+      const record = state.vehicles[vehicle.id];
+      if (!isPlainObject(record)) return;
+      record.parqueadero = vehicle.parkingGroup || "SIN ASIGNAR";
+      record.puesto = vehicle.parkingSpot || "";
+    });
+  }
+
+  state.meta = {
+    ...meta,
+    parkingPlanVersion: PARKING_PLAN_VERSION,
+    needsRemoteSave: meta.needsRemoteSave || !alreadyCurrent
+  };
+}
+
 function migrateMapGridSize(state, sourceState = state) {
   if (!isPlainObject(state) || !isPlainObject(state.map)) return;
 
@@ -368,6 +394,7 @@ export function loadState() {
 
 export function saveState(state) {
   state.meta.updatedAt = nowIso();
+  delete state.meta.needsRemoteSave;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 

@@ -614,6 +614,20 @@ textarea {
   font-weight: 950;
 }
 
+.parking-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 46px;
+  height: 34px;
+  border: 1px solid rgba(255, 211, 76, 0.46);
+  border-radius: var(--radius);
+  color: var(--gold);
+  background: rgba(255, 211, 76, 0.1);
+  font-size: 0.78rem;
+  font-weight: 950;
+}
+
 .driver-name {
   margin: -6px 0 0;
   color: var(--text);
