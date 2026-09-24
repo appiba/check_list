@@ -1,6 +1,6 @@
-import { CHECKLIST_AREAS, STATUS } from "./data.js";
-import { badge, escapeHtml, formatDateTime, optionList } from "./utils.js";
-import { getIncidentSummary } from "./metrics.js";
+import { CHECKLIST_AREAS, STATUS } from "./data.js?v=20260924-parking-v2";
+import { badge, escapeHtml, formatDateTime, optionList } from "./utils.js?v=20260924-parking-v2";
+import { getIncidentSummary } from "./metrics.js?v=20260924-parking-v2";
 
 export function renderIncidents(state) {
   const summary = getIncidentSummary(state);

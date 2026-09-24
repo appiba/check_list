@@ -1,6 +1,6 @@
-import { ACTIVATION_CONTROLS, ACTIVATIONS } from "./data.js";
-import { escapeHtml, formatDateTime, normalize, percent, progressBar } from "./utils.js";
-import { getActivationSummary } from "./metrics.js";
+import { ACTIVATION_CONTROLS, ACTIVATIONS } from "./data.js?v=20260924-parking-v2";
+import { escapeHtml, formatDateTime, normalize, percent, progressBar } from "./utils.js?v=20260924-parking-v2";
+import { getActivationSummary } from "./metrics.js?v=20260924-parking-v2";
 
 export function renderActivations(state) {
   const summary = getActivationSummary(state);

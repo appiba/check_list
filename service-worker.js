@@ -1,4 +1,5 @@
-const CACHE_NAME = "expo12h-control-center-v21";
+const CACHE_NAME = "expo12h-control-center-v22";
+const ASSET_VERSION = "20260924-parking-v2";
 const APP_ASSETS = [
   "./",
   "./index.html",
@@ -7,23 +8,23 @@ const APP_ASSETS = [
   "./assets/expo12h-logo-primary.png",
   "./assets/icon.svg",
   "./assets/parque-centrica-map.png",
-  "./css/styles.css",
-  "./js/activations.js",
-  "./js/app.js",
-  "./js/broadcast.js",
-  "./js/checklist.js",
-  "./js/config.js",
-  "./js/dashboard.js",
-  "./js/data.js",
-  "./js/incidents.js",
-  "./js/map.js",
-  "./js/metrics.js",
-  "./js/storage.js",
-  "./js/sync.js",
-  "./js/team.js",
-  "./js/timeline.js",
-  "./js/utils.js",
-  "./js/vehicles.js"
+  `./css/styles.css?v=${ASSET_VERSION}`,
+  `./js/activations.js?v=${ASSET_VERSION}`,
+  `./js/app.js?v=${ASSET_VERSION}`,
+  `./js/broadcast.js?v=${ASSET_VERSION}`,
+  `./js/checklist.js?v=${ASSET_VERSION}`,
+  `./js/config.js?v=${ASSET_VERSION}`,
+  `./js/dashboard.js?v=${ASSET_VERSION}`,
+  `./js/data.js?v=${ASSET_VERSION}`,
+  `./js/incidents.js?v=${ASSET_VERSION}`,
+  `./js/map.js?v=${ASSET_VERSION}`,
+  `./js/metrics.js?v=${ASSET_VERSION}`,
+  `./js/storage.js?v=${ASSET_VERSION}`,
+  `./js/sync.js?v=${ASSET_VERSION}`,
+  `./js/team.js?v=${ASSET_VERSION}`,
+  `./js/timeline.js?v=${ASSET_VERSION}`,
+  `./js/utils.js?v=${ASSET_VERSION}`,
+  `./js/vehicles.js?v=${ASSET_VERSION}`
 ];
 
 self.addEventListener("install", (event) => {

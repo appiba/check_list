@@ -1,5 +1,5 @@
-import { ACTIVATION_CONTROLS, CHECKLIST, CHECKLIST_AREAS, EVENT, TIMELINE, VEHICLES } from "./data.js";
-import { percent } from "./utils.js";
+import { ACTIVATION_CONTROLS, CHECKLIST, CHECKLIST_AREAS, EVENT, TIMELINE, VEHICLES } from "./data.js?v=20260924-parking-v2";
+import { percent } from "./utils.js?v=20260924-parking-v2";
 
 export function getChecklistSummary(state) {
   const completed = CHECKLIST.filter((task) => state.checklist[task.id]?.status === "completado").length;

@@ -9,7 +9,7 @@ import {
   TEAM,
   TIMELINE,
   VEHICLES
-} from "./data.js";
+} from "./data.js?v=20260924-parking-v2";
 
 const JSONP_TIMEOUT_MS = 12000;
 const POST_TIMEOUT_MS = 16000;

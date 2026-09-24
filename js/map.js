@@ -1,5 +1,5 @@
-import { CHECKLIST, MAP_GRID, MAP_ZONES } from "./data.js";
-import { badge, escapeHtml, formatDateTime, optionList } from "./utils.js";
+import { CHECKLIST, MAP_GRID, MAP_ZONES } from "./data.js?v=20260924-parking-v2";
+import { badge, escapeHtml, formatDateTime, optionList } from "./utils.js?v=20260924-parking-v2";
 
 const ZONE_TYPES = {
   "parqueadero-a": { className: "vehicle", symbol: "P", label: "Parqueadero" },

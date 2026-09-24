@@ -1,6 +1,6 @@
-import { CHECKLIST, CHECKLIST_AREAS, STATUS } from "./data.js";
-import { badge, escapeHtml, fieldId, formatDateTime, optionList, progressBar } from "./utils.js";
-import { getChecklistSummary } from "./metrics.js";
+import { CHECKLIST, CHECKLIST_AREAS, STATUS } from "./data.js?v=20260924-parking-v2";
+import { badge, escapeHtml, fieldId, formatDateTime, optionList, progressBar } from "./utils.js?v=20260924-parking-v2";
+import { getChecklistSummary } from "./metrics.js?v=20260924-parking-v2";
 
 const FILTERS = [
   ["todas", "TODAS"],

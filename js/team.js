@@ -1,5 +1,5 @@
-import { STAFF, TEAM } from "./data.js";
-import { badge, escapeHtml, formatDateTime, optionList } from "./utils.js";
+import { STAFF, TEAM } from "./data.js?v=20260924-parking-v2";
+import { badge, escapeHtml, formatDateTime, optionList } from "./utils.js?v=20260924-parking-v2";
 
 export function renderTeam(state) {
   return `

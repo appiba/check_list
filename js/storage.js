@@ -10,7 +10,7 @@ import {
   TEAM,
   TIMELINE,
   VEHICLES
-} from "./data.js";
+} from "./data.js?v=20260924-parking-v2";
 
 export const STORAGE_KEY = "expo12h-control-center-v1";
 export const DEFAULT_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxdWHR_Am0abA0Sa55dNNVmwF0LJ8bsO7TGcnIpYfovvwRLXx0UWrFJMycNfAfKJXi8/exec";
